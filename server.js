@@ -8,7 +8,7 @@ var port = process.env.PORT || 8080 || 3000;
 
 var app = express();
 
-app.use( express.static( __dirname + '/' ));
+//app.use( express.static( __dirname + '/' ));
 app.get('/',function(req, res) {
   res.redirect('index.html');
 });
