@@ -1,0 +1,77 @@
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="mystyle.css">
+
+</head>
+<body>
+   <h1 align="center">P2P Data Sharing</h1>
+   <table>
+     <tr>
+       <td>
+   <span>
+     <strong>Your Status :</strong>
+     <span id="aliceStatus">disconnected</span>
+ </span>
+</td>
+</tr>
+<tr>
+  <td>
+ <span>
+   <strong>Your Friend's Status :</strong>
+   <span id="bobStatus">disconnected</span>
+</span>
+</td>
+</tr>
+</table>
+  <div id = "toast">File Sent...</div>
+  <div id = "toast">File Received...</div>
+  <div class = "container">
+  <table id = "tab" align="center">
+    <tr>
+      <td>
+      <button  id="startButton" style="height:50px;width:100px">start</button>
+      </td>
+    </tr>
+    <tr class="break"><td colspan="5"></td></tr>
+  <tr>
+    <td>
+        <input type="file" id="fileInput" name="file" />
+        <label for="fileInput">&nbsp;Choose a file...</label>
+        <span>
+          <strong>Chosen file :</strong>
+          <span id="fileName">None</span>
+      </span>
+      </td>
+ </tr>
+ <tr class="break"><td colspan="5"></td></tr>
+
+  <tr>
+  <td>
+    <input type="radio" name="chunks" value="first" id = "one" checked> 20 KB<br>
+    <input type="radio" name="chunks" value="second" id = "two" > 60 KB<br>
+    <input type="radio" name="chunks" value="third" id = "three" > 500 KB<br>
+    <input type="radio" name="chunks" value="four" id = "four" > 1024KB
+  </td>
+  </tr>
+
+  <tr>
+  <td>
+  <button id="sendFile" style="height:50px;width:100px">send File</button>
+  <a id = "download"></a>
+  </td>
+  </tr>
+  <tr>
+    <td>
+      <div class = "progress-bar-design" >
+    <progress id="progress" max="0" value="0"></progress>
+  </div>
+  </td>
+  </tr>
+  </table>
+</div>
+  <script src = "/socket.io/socket.io.js"></script>
+  <script src = "https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script src = "/fileRead.js"></script>
+
+</body>
+</html>

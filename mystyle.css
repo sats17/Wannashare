@@ -1,0 +1,54 @@
+body {
+  background-color:#FAEBD7;
+  width:100%;
+}
+div.container {
+   width:98%;
+   margin:1%;
+ }
+ table#tab {
+    margin:0px auto ;
+    position: sticky;
+    padding-top: 100px;
+
+}
+
+ #toast{
+   position: fixed;
+   background-color: #34EDEA;
+   top:0;
+   left: 50%;
+   color:red;
+   padding:16px;
+   border-radius: center;
+   z-index: 1;
+   box-shadow:0 0 20px rgba(0, 0, 0, 0.3);
+   visibility: hidden;
+ }
+
+ #toast.show{
+   visibility: visible;
+ }
+
+ tr.break td {
+  height: 10px;
+}
+
+input#fileInput{
+  display:none;
+}
+
+input#fileInput + label{
+  background-color: #D2691E;
+  padding: 8px;
+  color: black;
+  font-weight: bold;
+  border: 2px solid #9ec3ff;
+  border-radius: 9px;
+}
+
+input#fileInput + label:active:hover:not([disabled]){
+  background-color: #3b73Ce;
+  border-color: #729fe7;
+  cursor: pointer;
+}
