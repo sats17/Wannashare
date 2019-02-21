@@ -13,7 +13,7 @@ app.get('/',function(req, res) {
   res.redirect('index.html');
 });
 
-var server = app.listen(port ,'0.0.0.0', ()=>{
+var server = app.listen(port , ()=>{
   console.log('server started on port ' );
 });
 
