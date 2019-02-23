@@ -16,8 +16,8 @@ var userName;
 let receiveBuffer = [];
 var anotherpeer = false;
 
-var StunServer = {stun.l.google.com:19302}
-
+//var StunServer = {stun.l.google.com:19302}
+const configuration = {iceServers: [{urls: 'stuns:stun.l.google.com:19302'}]};
 
 
 const fileInput = document.querySelector('input#fileInput');
@@ -186,7 +186,7 @@ function maybeStart() {
 
 function createPeerConnection() {
     try {
-      pc = new RTCPeerConnection(StunServer);
+      pc = new RTCPeerConnection(configuration);
       //console.log("rtc peer connection start before ice");
       const dataChannelOptions = {
         ordered: true, // do not guarantee order
