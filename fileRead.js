@@ -17,7 +17,13 @@ let receiveBuffer = [];
 var anotherpeer = false;
 
 //var StunServer = {stun.l.google.com:19302}
-const configuration = {iceServers: [{urls: 'stuns:stun.l.google.com:19302'}]};
+const configuration = {
+  iceServers: [{
+    urls: 'stuns:stun.l.google.com:19302',
+    'stun2.l.google.com:19302',
+    'stun3.l.google.com:19302',
+    'stun4.l.google.com:19302
+    }]};
 
 
 const fileInput = document.querySelector('input#fileInput');
