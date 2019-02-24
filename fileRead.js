@@ -200,7 +200,7 @@ function maybeStart() {
 
 function createPeerConnection() {
     try {
-      pc = new RTCPeerConnection(configuration);
+      pc = new RTCPeerConnection(pcConfig);
       //console.log("rtc peer connection start before ice");
       const dataChannelOptions = {
         ordered: true, // do not guarantee order
