@@ -373,6 +373,9 @@ function onSendChannelStateChange(){
     socket.emit("userNameEvent",userName);
 
   }
+  else{
+    console.log("turn server daal ");
+  }
 }
 
 function reciveChannelCallback(event){
