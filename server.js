@@ -35,17 +35,7 @@ io.sockets.on('connection', function(socket) {
     // for a real app, would be room-only (not broadcast)
     socket.broadcast.to(serverRoom).emit('message', message);
   });
-/*
-  socket.on('fileSize', function(data) {
-    log('Client said fileSize is : ', data);
-    // for a real app, would be room-only (not broadcast)
-    socket.broadcast.to(serverRoom).emit('fileSize', data);
-  });
-  socket.on('fileName', function(data) {
-    log('Client said filename is : ', data);
-    // for a real app, would be room-only (not broadcast)
-    socket.broadcast.to(serverRoom).emit('fileName', data);
-  });*/
+
   socket.on('FileMetaData', function(data) {
     log('Client said filename is : ', data.sendFileName , "And file size is ",data.sendFileSize );
     // for a real app, would be room-only (not broadcast)
