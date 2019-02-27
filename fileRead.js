@@ -240,6 +240,7 @@ function handleIceCandidate(event) {
 function handleIceCandidateEvents(event){
       if(pc.iceConnectionState === "failed"){
         console.log("ice connection failed");
+        alert("connection cannot created,because one of you are behind in the symmetric NAT");
       }
 
 }
