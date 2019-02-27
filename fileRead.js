@@ -212,6 +212,7 @@ function createPeerConnection() {
       dataChannel.binaryType = 'arraybuffer';
       pc.ondatachannel = reciveChannelCallback;
       pc.onicecandidate = handleIceCandidate;
+      pc.oniceconnectionstatechange = handleIceCandidateEvents;
 
       console.log('Created RTCPeerConnnection');
     }
@@ -234,6 +235,13 @@ function handleIceCandidate(event) {
     } else {
     console.log('End of candidates.');
   }
+}
+
+function handleIceCandidateEvents(event){
+      if(pc.iceConnectionState === "failed"){
+        console.log("ice connection failed");
+      }
+
 }
 
 function handleCreateOfferError(event) {
