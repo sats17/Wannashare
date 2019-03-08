@@ -22,7 +22,14 @@ var pcConfig = {
     {'urls':'stun:stun1.l.google.com:19302'},
     {'urls':'stun:stun2.l.google.com:19302'},
     {'urls':'stun:stun3.l.google.com:19302'},
-    {'urls':'stun:stun4.l.google.com:19302'}
+    {'urls':'stun:stun4.l.google.com:19302'},
+    {"urls":["turn:74.125.23.127:19305?transport=udp",
+    "turn:[2404:6800:4008:c02::7f]:19305?transport=udp",
+    "turn:74.125.23.127:19305?transport=tcp",
+    "turn:[2404:6800:4008:c02::7f]:19305?transport=tcp"],
+    "username":"CIPCj+QFEgamgERWNl0Yzc/s6OMTIICjBQ",
+    "credential":"GeE19Uje/2E9YJF66Bt/xPwurBA=","maxRateKbps":"8000"
+    }
 ]
 };
 
