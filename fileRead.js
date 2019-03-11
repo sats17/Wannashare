@@ -356,7 +356,7 @@ function sendFileAction() {
             readSlice(offset);
           }
         if(offset === file.size){
-          readToast();
+          
           fileNameField.textContent = "None";
         }
     });
@@ -440,13 +440,7 @@ function DownloadToast(){
   },1000);
 }
 
-function readToast(){
-  var x = document.getElementById("toastRead");
-  x.classList.add("show");
-  setTimeout(function(){
-    x.classList.remove("show");
-  },1000);
-}
+
 
 function onSendChannelStateChange(){
   var readyState = dataChannel.readyState;
