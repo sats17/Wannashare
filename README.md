@@ -1,4 +1,4 @@
 # wannashare
 npm install <br>
-node server
+node server <br>
 port is 8080
