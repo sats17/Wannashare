@@ -32,7 +32,7 @@ var pcConfig = {
 
 
 const fileInput = document.querySelector('input#fileInput');
-fileInput.disabled = true;
+//fileInput.disabled = true;
 var fullPath = document.getElementById('fileInput').value;
 var fileNameField = document.getElementById('fileName');
 var aliceStatusName = document.getElementById('aliceStatus');
@@ -43,17 +43,20 @@ fileInput.addEventListener('change', handleFileSelect, false);
 var CreateRoom = document.querySelector('button#Create');
 var JoinRoom = document.querySelector('button#Join');
 var sendFile = document.querySelector('button#sendFile');
+var serverBaseSendFile = document.querySelector('button#sendFileUsingServer');
 
 
 
 const downloadAnchor = document.querySelector('a#download');
 const Progress = document.querySelector('progress#progress');
 
-//sendFile.disabled = true;
+sendFile.disabled = true;
+serverBaseSendFile.disabled = true;
 //CreateRoom.disabled = true;
 CreateRoom.onclick = createAction;
 JoinRoom.onclick = joinAction;
 sendFile.onclick = sendFileAction;
+serverBaseSendFile.onclick = serverBaseSendFileAction;
 
 //fileInput.onclick = handleFileSelect;
 
@@ -177,9 +180,39 @@ socket.on('fileReceived' , function(data){
       fileSentToast();
       fileInput.value = '';
       sendFile.disabled = true;
+      serverBaseSendFile.disabled = true;
     });
 //////////////////////////////////////////////////////////////
+socket.on('serverBaseDataReceive',function(event){
+  Progress.max = fileSize;
+  receiveBuffer.push(event.ArrayData);
+  //console.log("reach");
 
+  receivedSize += event.ArrayData.byteLength;
+
+  Progress.value += event.ArrayData.byteLength;
+  if(receivedSize === fileSize){
+
+        receivedSize = 0;
+
+        const received = new Blob(receiveBuffer);
+        console.log(received);
+        downloadAnchor.href = URL.createObjectURL(received);
+        downloadAnchor.download = fileName;
+        console.log("file name is ",fileName);
+        //var download ='Click to download ',fileSize;
+        console.log(fileSize);
+        downloadAnchor.textContent = 'Click to download ';
+        socket.emit("fileReceived" , "file receives");
+        console.log("received.size here we reach");
+        receiveBuffer = [];
+        Progress.value = 0;
+        DownloadToast();
+
+      }
+
+});
+//////////////////////////////////////////////////////////////
 
 socket.on('userDisconnect',function(data){
   bobStatus.textContent = "user disconnected";
@@ -290,6 +323,7 @@ function handleFileSelect(evt){
   }
   else{
     sendFile.disabled = false;
+    serverBaseSendFile.disabled = false;
     var filename = fileInput.files[0].name;
     fileNameField.textContent = filename;
     console.log("Full path is ", filename);
@@ -356,7 +390,65 @@ function sendFileAction() {
             readSlice(offset);
           }
         if(offset === file.size){
-          
+          readToast();
+          fileNameField.textContent = "None";
+        }
+    });
+
+}// end of sendFileAction
+
+function serverBaseSendFileAction() {
+    file = fileInput.files[0];
+
+    if(file.size === 0){
+      alert("File size is zero");
+    }
+    Progress.max = file.size;
+
+    if(document.getElementById('one').checked) {
+        var chunkSize = 20000;
+        console.log("one selected");
+    }
+    else if(document.getElementById('two').checked) {
+        var chunkSize = 61440;
+        console.log("two selected");
+    }else if(document.getElementById('three').checked) {
+        var chunkSize = 512000;
+        console.log("three selected");
+    }
+    else if(document.getElementById('four').checked) {
+        var chunkSize = 1048576;
+        console.log("four selected");
+    }
+
+
+
+    let offset = 0;//set offset for file reading
+
+    fileReader = new FileReader();//create object of file API
+
+    fileReader.onerror = FileErrorHandler;//hamdle error
+
+    const readSlice = o => {
+      //console.log('readSlice ', o);
+      const slice = file.slice(offset, o + chunkSize);
+      fileReader.readAsArrayBuffer(slice);
+    };
+
+    readSlice(0);
+
+
+    fileReader.addEventListener('load', e => {
+
+        socket.emit('serverBaseDataShare',{Data:e.target.result});
+        offset += e.target.result.byteLength;
+        Progress.value += e.target.result.byteLength;
+
+        if (offset < file.size) {
+            readSlice(offset);
+          }
+        if(offset === file.size){
+          readToast();
           fileNameField.textContent = "None";
         }
     });
@@ -440,7 +532,13 @@ function DownloadToast(){
   },1000);
 }
 
-
+function readToast(){
+  var x = document.getElementById("toastRead");
+  x.classList.add("show");
+  setTimeout(function(){
+    x.classList.remove("show");
+  },1000);
+}
 
 function onSendChannelStateChange(){
   var readyState = dataChannel.readyState;
