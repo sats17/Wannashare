@@ -42,6 +42,11 @@ io.sockets.on('connection', function(socket) {
     // for a real app, would be room-only (not broadcast)
     socket.broadcast.to(roomCreator).emit('message', message);
   });
+  socket.on('serverBaseDataShare',function(data){
+    //console.log(data.Data);
+    //console.log("data size is ",data.Data.byteLength);
+    socket.to(roomCreator).emit('serverBaseDataReceive',{ArrayData:data.Data});
+  });
 
 socket.on('FileMetaData', function(data) {
     log('Client said filename is : ', data.sendFileName , "And file size is ",data.sendFileSize );
@@ -69,7 +74,7 @@ socket.on('create', function(data) {
 
 });
 socket.on('isHeWantToConnect',function(data){
-  
+
   io.sockets.in(roomCreator).emit('isYouWantToConnect',{fromMail : roomJoin});
 });
 socket.on('join',function(data){
