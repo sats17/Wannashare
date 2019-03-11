@@ -30,7 +30,22 @@ div.container {
    visibility: visible;
  }
 
- 
+ #toastRead{
+   position: fixed;
+   background-color: #34EDEA;
+   top:0;
+   left: 50%;
+   color:red;
+   padding:16px;
+   border-radius: center;
+   z-index: 1;
+   box-shadow:0 0 20px rgba(0, 0, 0, 0.3);
+   visibility: hidden;
+ }
+
+ #toastRead.show{
+   visibility: visible;
+ }
 
  tr.break td {
   height: 10px;
