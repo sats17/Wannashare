@@ -2,7 +2,7 @@ const fs = require('fs');
 const http = require('http');
 var socketIO = require('socket.io');
 var express = require('express');
-var serverRoom;
+
 
 var port = process.env.PORT || 8080 || 3000;
 
@@ -13,7 +13,7 @@ app.get('/',function(req, res) {
   res.redirect('index.html');
 });
 
-var server = app.listen(port , ()=>{
+var server = app.listen(port ,'0.0.0.0', ()=>{
   console.log('server started on port ' );
 });
 
@@ -24,6 +24,13 @@ var io = socketIO.listen(server);
 
 io.sockets.on('connection', function(socket) {
 
+//  var roomCreator;
+
+  var roomCreatorSocketId;
+  var roomJoinSocketId;
+  var roomCreator;
+  var roomJoin;
+
   // convenience function to log server messages on the client
   function log() {
     var array = ['Message from server:'];
@@ -33,57 +40,78 @@ io.sockets.on('connection', function(socket) {
   socket.on('message', function(message) {
     log('Client said: ', message);
     // for a real app, would be room-only (not broadcast)
-    socket.broadcast.to(serverRoom).emit('message', message);
+    socket.broadcast.to(roomCreator).emit('message', message);
   });
 
-  socket.on('FileMetaData', function(data) {
+socket.on('FileMetaData', function(data) {
     log('Client said filename is : ', data.sendFileName , "And file size is ",data.sendFileSize );
     // for a real app, would be room-only (not broadcast)
-    socket.broadcast.to(serverRoom).emit('FileMetaData', data);
+    socket.broadcast.to(roomCreator).emit('FileMetaData', data);
   });
-  socket.on('fileReceived', function(data) {
+socket.on('fileReceived', function(data) {
     log('Client said  : ', data);
     // for a real app, would be room-only (not broadcast)
-    socket.broadcast.to(serverRoom).emit('fileReceived', data);
-  });
-  socket.on('userNameEvent', function(data) {
-    log('Client said username is  : ', data);
-    // for a real app, would be room-only (not broadcast)
-    socket.broadcast.to(serverRoom).emit('userNameFromServer', data);
+    socket.broadcast.to(roomCreator).emit('fileReceived', data);
   });
 
-  socket.on('create or join', function(room) {
-    serverRoom = room;
-    log('Received request to create or join room ' + room);
+/////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 
-    var clientsInRoom = io.sockets.adapter.rooms[room];
+socket.on('create', function(data) {
+    roomCreator = data.email;
+    log('Received request to create or join room ' + roomCreator);
+
+    socket.join(data.email);
+    log('Client ID ' + socket.id + ' created room ' + roomCreator);
+    //socket.emit('created', room, socket.id);
+
+
+});
+socket.on('isHeWantToConnect',function(data){
+  
+  io.sockets.in(roomCreator).emit('isYouWantToConnect',{fromMail : roomJoin});
+});
+socket.on('join',function(data){
+
+
+  roomJoinSocketId = socket.id;
+  roomCreator = data.toMail;
+  roomJoin = data.fromMail;
+  var clientsInRoom = io.sockets.adapter.rooms[roomCreator];
+  var numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
+  if(numClients > 1){
+    socket.emit('roomFull',roomCreator);
+  }
+  else if(numClients < 1){
+    socket.emit('peerOffline',roomCreator);
+  }
+  else{
+  io.sockets.in(roomCreator).emit('isYouWantToConnect',{fromMail : roomJoin,socketid:roomJoinSocketId});
+  }
+
+  });
+
+socket.on("acceptConnection",function(data){
+
+    io.sockets.in(data.takeyourid).emit('helpToCallSecondPeer','hello');
+  });
+
+  socket.on('joinConfirm',function(data){
+    socket.join(roomCreator);
+    var clientsInRoom = io.sockets.adapter.rooms[roomCreator];
     var numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
-    log('Room ' + room + ' now has ' + numClients + ' client(s)');
-
-    if (numClients === 0) {
-      socket.join(room);
-      log('Client ID ' + socket.id + ' created room ' + room);
-      socket.emit('created', room, socket.id);
-
-    } else if (numClients === 1) {
-      log('Client ID ' + socket.id + ' joined room ' + room);
-      io.sockets.in(room).emit('join', room);
-      socket.join(room);
-      socket.emit('joined', room, socket.id);
-      io.sockets.in(room).emit('ready');
-    }
-     else {
-      socket.emit('full', room);
-      //window.parent.close();
-    }
+    log('Room ' + roomCreator + ' now has ' + numClients + ' client(s)');
+    io.sockets.in(roomCreator).emit('joinConfirmed',{creator:roomCreator,joiner:roomJoin});
   });
+
   socket.on('disconnect',function(){
     console.log("room leave");
-    socket.broadcast.to(serverRoom).emit('userDisconnect', 'disconnected');
+    socket.broadcast.to(roomCreator).emit('userDisconnect', 'disconnected');
   });
   socket.on('end', function (){
-    //socket.disconnect(true);
-    socket.leave(serverRoom);
+
+    socket.leave(roomCreator);
       log('disconnect to server');
   });
   socket.on('bye', function(){
