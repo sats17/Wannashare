@@ -1,7 +1,4 @@
 'use strict';
-var isChannelReady = false;
-var isInitiator = false;
-var isStarted = false;
 var pc;
 var reader;
 var file;
@@ -11,25 +8,25 @@ var fileSize = 0;
 var fileName;
 var receiveChannel;
 let receivedSize = 0;
-var userName;
+
+var heCreateRoom = false;
 
 let receiveBuffer = [];
 var anotherpeer = false;
 
-//var StunServer = {stun.l.google.com:19302}
 var pcConfig = {
   'iceServers': [{'urls': 'stun:stun.l.google.com:19302'},
     {'urls':'stun:stun1.l.google.com:19302'},
     {'urls':'stun:stun2.l.google.com:19302'},
     {'urls':'stun:stun3.l.google.com:19302'},
     {'urls':'stun:stun4.l.google.com:19302'},
-    {"urls":["turn:74.125.23.127:19305?transport=udp",
-    "turn:[2404:6800:4008:c02::7f]:19305?transport=udp",
-    "turn:74.125.23.127:19305?transport=tcp",
-    "turn:[2404:6800:4008:c02::7f]:19305?transport=tcp"],
-    "username":"CIPCj+QFEgamgERWNl0Yzc/s6OMTIICjBQ",
-    "credential":"GeE19Uje/2E9YJF66Bt/xPwurBA=","maxRateKbps":"8000"
-    }
+  {
+    "urls": [
+      "turn:13.250.13.83:3478?transport=udp"
+    ],
+    "username": "YzYNCouZM1mhqhmseWk6",
+    "credential": "YzYNCouZM1mhqhmseWk6"
+  }
 ]
 };
 
@@ -43,7 +40,8 @@ var aliceStatusName = document.getElementById('aliceStatus');
 
 fileInput.addEventListener('change', handleFileSelect, false);
 
-var startButton = document.querySelector('button#startButton');
+var CreateRoom = document.querySelector('button#Create');
+var JoinRoom = document.querySelector('button#Join');
 var sendFile = document.querySelector('button#sendFile');
 
 
@@ -51,9 +49,10 @@ var sendFile = document.querySelector('button#sendFile');
 const downloadAnchor = document.querySelector('a#download');
 const Progress = document.querySelector('progress#progress');
 
-sendFile.disabled = true;
-//startButton.disabled = true;
-startButton.onclick = startAction;
+//sendFile.disabled = true;
+//CreateRoom.disabled = true;
+CreateRoom.onclick = createAction;
+JoinRoom.onclick = joinAction;
 sendFile.onclick = sendFileAction;
 
 //fileInput.onclick = handleFileSelect;
@@ -61,102 +60,109 @@ sendFile.onclick = sendFileAction;
 
 var socket = io.connect();
 
-var room;
-function startAction(){
-  userName = prompt("Enter your name:")
-  var room = prompt('Enter room name:');
-  aliceStatusName.textContent = userName+" is connected.";
-  if (room !== '') {
-    socket.emit('create or join', room);
-    console.log('Attempted to create or  join room', room);
+
+function createAction(){
+  //userName = prompt("Enter your name:");
+  var roomCreator = prompt('Enter mail:');
+  aliceStatusName.textContent = roomCreator +" is connected.";
+  if (roomCreator !== '') {
+    socket.emit('create', {email : roomCreator});
+    console.log('Attempted to create or  join roomCreator', roomCreator);
   }
-  socket.on('created', function(room) {
-    console.log('Created room ' + room);
-    anotherpeer = true;
-    isInitiator = true;
-  });
-  socket.on('full', function(room) {
-    console.log('Room ' + room + ' is full');
-    alert("room is full");
-  });
-  socket.on('join', function (room) {
-    console.log('Another peer made a request to join room ' + room);
-    console.log('This peer is the initiator of room ' + room + '!');
-    isChannelReady = true;
+  heCreateRoom = true;
+  var m = 'start connection';
+  socket.emit('message',m);
 
-    fileInput.disabled = false;
-    console.log("is channel ready here first page:");
-  });
-
-  socket.on('joined', function(room) {
-    console.log('joined: ' + room);
-    isChannelReady = true;
-
-
-    fileInput.disabled = false;
-    console.log("is channel ready here second page:");
-  });
-
-  socket.on('log', function(array) {
-    console.log.apply(console, array);
-  });
-
-  ////////////////////////////////////////////////
-  // This client receives a message
-  socket.on('message', function(message) {
-    console.log('Client received message:', message);
-
-    if (message === 'start connection') {
-      console.log("socket part is run here");
-      maybeStart();
-    }
-      else if (!isInitiator && !isStarted) {
-        maybeStart();
-        pc.setRemoteDescription(new RTCSessionDescription(message));
-        doAnswer();
-      }
-     else if (message.type === 'answer' && isStarted) {
-      pc.setRemoteDescription(new RTCSessionDescription(message));
-    } else if (message.type === 'candidate' && isStarted) {
-      var candidate = new RTCIceCandidate({
-        sdpMLineIndex: message.label,
-        candidate: message.candidate
-      });
-      pc.addIceCandidate(candidate);
-      isStarted = false;
-      isInitiator = true;
-      isChannelReady = false;
-    } else if (message === 'bye' && isStarted) {
-      handleRemoteHangup();
-    }
-
-  });
-
-    var m = 'start connection';
-    socket.emit('message',m);
-    if (isInitiator) {
-      console.log("isInitiator part is run first");
-      maybeStart();
-    }
-
+  JoinRoom.disabled = true;
 }//end of start function
+
+function joinAction(){
+  CreateRoom.disabled = true;
+  var roomJoiner = prompt("Enter your mail");
+  var room = prompt("Enter another peer mail id");
+  aliceStatusName.textContent = roomJoiner +" is connected.";
+
+  socket.emit('join',{fromMail : roomJoiner ,toMail : room});
+}//end of join Action
+
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+
+
+socket.on('isYouWantToConnect',function(data){
+  var peerMail = data.fromMail;
+  if (confirm("User "+peerMail+" wants to connect ?")) {
+        socket.emit("acceptConnection",{takeyourid:data.socketid});
+    }
+    else {
+    socket.emit("rejectConnection");
+  }
+});
+
+socket.on('roomFull',function(data){
+  console.log(data+" is currently connect with other user");
+});
+
+socket.on('peerOffline',function(data){
+    console.log(data+" is currently not online");
+});
+
+socket.on('connectionAccepted',function(data){
+  console.log(data);
+  //prompt("connection created");
+});
+
+socket.on('helpToCallSecondPeer',function(data){
+  console.log(data);
+
+  socket.emit('joinConfirm');
+});
+
+socket.on('joinConfirmed',function(data){
+  if(heCreateRoom){
+    bobStatus.textContent = data.joiner+" is connected";
+    startServerlessConnection();
+  }
+  else{
+    bobStatus.textContent = data.creator+" is connected";
+  }
+});
+
+
 /////////////////////////////////////////////////////////////////////////////
-///////// Chat section //////////////////////////////////////////////////////
+///////// receive socket event section //////////////////////////////////////////////////////
 
 
+socket.on('log', function(array) {
+  console.log.apply(console, array);
+});
 
+////////////////////////////////////////////////
+// This client receives a message
+socket.on('message', function(message) {
+  console.log('Client received message:', message);
+  if (message.type === 'offer') {
+      startServerlessConnection();
+      pc.setRemoteDescription(new RTCSessionDescription(message));
+      doAnswer();
+    }
+   else if (message.type === 'answer') {
+    pc.setRemoteDescription(new RTCSessionDescription(message));
+  } else if (message.type === 'candidate') {
+    var candidate = new RTCIceCandidate({
+      sdpMLineIndex: message.label,
+      candidate: message.candidate
+    });
+    pc.addIceCandidate(candidate);
 
-////////////////////// Meta data send //////////////////////////////////
-/*
-socket.on('fileSize' , function(data){
-    console.log("rec file size",data);
-    fileSize = data;
+  } else if (message === 'bye') {
+    handleRemoteHangup();
+  }
 
-  });
-socket.on('fileName' , function(data){
-      console.log("rec file size",data);
-      fileName = data;
-    });*/
+});
+
+////////////////////// Meta data receive events //////////////////////////////////
+
 socket.on("FileMetaData" , function(data){
       console.log(data);
       console.log("file size is ", data.sendFileSize , " file name is ",data.sendFileName);
@@ -168,34 +174,30 @@ socket.on('fileReceived' , function(data){
       console.log("rec file size",data);
       Progress.value = 0;
       //alert("file received to another peer");
-      downloadToast();
+      fileSentToast();
       fileInput.value = '';
       sendFile.disabled = true;
     });
 //////////////////////////////////////////////////////////////
-socket.on('userNameFromServer',function(data){
-  bobStatus.textContent = data+" is connected";
-  startButton.disabled = true;
-});
+
 
 socket.on('userDisconnect',function(data){
   bobStatus.textContent = "user disconnected";
 });
 
 //////////////////////////////////////////////////////////////////////////
-function maybeStart() {
-    console.log('>>>>>>> maybeStart() ', isStarted, isChannelReady);
-    if (!isStarted  && isChannelReady) {
-      console.log('>>>>>> creating peer connection');
+function startServerlessConnection() {
+    console.log('>>>>>>> startServerlessConnection() ');
+
+    console.log('>>>>>> creating peer connection');
       createPeerConnection();
-      //pc.addStream(localStream);
-      isStarted = true;
-      console.log('isInitiator', isInitiator);
-      if (isInitiator) {
+
+      console.log('heCreateRoom', heCreateRoom);
+      if (heCreateRoom) {
         doCall();
       }
-    }
-}//end of function maybeStart
+
+}//end of function startServerlessConnection
 
 
 function createPeerConnection() {
@@ -239,8 +241,7 @@ function handleIceCandidate(event) {
 
 function handleIceCandidateEvents(event){
       if(pc.iceConnectionState === "failed"){
-        console.log("ice connection failed");
-        alert("connection cannot created,because one of you are behind in the symmetric NAT");
+        alert("Peers Connection failed , because one of the user are behind symmetric NAT");
       }
 
 }
@@ -250,29 +251,27 @@ function handleCreateOfferError(event) {
 }
 
 function doCall() {
-    console.log('Sending offer to peer');
-    pc.createOffer().then(
-    setLocalAndSendMessage,
-    handleCreateOfferError
-  );
-  //  pc.createOffer(setLocalAndSendMessage, handleCreateOfferError);
+  console.log('Sending offer to peer');
+
+  pc.createOffer(function(offer) {
+  pc.setLocalDescription(new RTCSessionDescription(offer), function() {
+    socket.emit('message',offer);
+  }, onCreateSessionDescriptionError);
+}, handleCreateOfferError);
+
 }
 
 function doAnswer() {
     console.log('Sending answer to peer.');
-    pc.createAnswer().then(
-      setLocalAndSendMessage,
-      onCreateSessionDescriptionError
-  );
+
+  pc.createAnswer(function(answer) {
+    pc.setLocalDescription(new RTCSessionDescription(answer), function() {
+      socket.emit('message',answer);
+    }, onCreateSessionDescriptionError);
+  }, handleCreateOfferError);
 }
 
-function setLocalAndSendMessage(sessionDescription) {
-    //console.log('here i reached');
-    pc.setLocalDescription(sessionDescription);
-  //  console.log('local description ',a);
-    console.log('setLocalAndSendMessage sending message', sessionDescription);
-    socket.emit('message',sessionDescription);
-}
+
 
 function onCreateSessionDescriptionError(error) {
   console.log('Failed to create session description:' + error.toString());
@@ -313,7 +312,7 @@ function sendFileAction() {
 
 
     //var chunkSize  = 64 * 1024;
-    
+
     if(document.getElementById('one').checked) {
         var chunkSize = 20000;
         console.log("one selected");
@@ -331,32 +330,38 @@ function sendFileAction() {
     }
 
 
-    let offset = 0;
+    let offset = 0;//set offset for file reading
 
-    fileReader = new FileReader();
-    fileReader.onerror = FileErrorHandler;
+    fileReader = new FileReader();//create object of file API
+
+    fileReader.onerror = FileErrorHandler;//hamdle error
+
+    const readSlice = o => {
+      //console.log('readSlice ', o);
+      const slice = file.slice(offset, o + chunkSize);
+      fileReader.readAsArrayBuffer(slice);
+    };
+
+    readSlice(0);
+
+
     fileReader.addEventListener('load', e => {
       //console.log('FileRead.onload ', e);
-    dataChannel.send(e.target.result);
-    offset += e.target.result.byteLength;
-    Progress.value += e.target.result.byteLength;
+        dataChannel.send(e.target.result);
+        offset += e.target.result.byteLength;
+        Progress.value += e.target.result.byteLength;
 
 
-    if (offset < file.size) {
-      readSlice(offset);
-    }
-    if(offset === file.size){
-      fileNameField.textContent = "None";
-    }
-  });
-  const readSlice = o => {
-    //console.log('readSlice ', o);
-    const slice = file.slice(offset, o + chunkSize);
-    fileReader.readAsArrayBuffer(slice);
-  };
-  readSlice(0);
+        if (offset < file.size) {
+            readSlice(offset);
+          }
+        if(offset === file.size){
+          readToast();
+          fileNameField.textContent = "None";
+        }
+    });
 
-}
+}// end of sendFileAction
 
 function FileErrorHandler(evt) {
     switch(evt.target.error.code) {
@@ -374,18 +379,7 @@ function FileErrorHandler(evt) {
 }//end of FileErrorHandler
 
 
-function onSendChannelStateChange(){
-  var readyState = dataChannel.readyState;
-  console.log('ready state is ' , readyState);
-  if(readyState === 'open'){
-    console.log("data channel opend");
-    socket.emit("userNameEvent",userName);
 
-  }
-  else{
-    console.log("turn server daal ");
-  }
-}
 
 function reciveChannelCallback(event){
   console.log('here we reach')
@@ -413,7 +407,7 @@ function onReceiveMessageCallback(event) {
   Progress.value += event.data.byteLength;
   if(receivedSize === fileSize){
         receivedSize = 0;
-      //  var uarray = Uint8Array.from(receiveBuffer);
+        //var uarray = Uint8Array.from(receiveBuffer);
         //console.log("typed array is =",uarray);
         const received = new Blob(receiveBuffer);
         console.log(received);
@@ -427,22 +421,60 @@ function onReceiveMessageCallback(event) {
         console.log("received.size here we reach");
         receiveBuffer = [];
         Progress.value = 0;
-        downloadToast();
-
-
+        DownloadToast();
 
       }
 }
-function downloadToast(){
+function fileSentToast(){
   var x = document.getElementById("toast");
   x.classList.add("show");
   setTimeout(function(){
     x.classList.remove("show");
   },1000);
 }
+function DownloadToast(){
+  var x = document.getElementById("Toast");
+  x.classList.add("show");
+  setTimeout(function(){
+    x.classList.remove("show");
+  },1000);
+}
+
+function readToast(){
+  var x = document.getElementById("toastRead");
+  x.classList.add("show");
+  setTimeout(function(){
+    x.classList.remove("show");
+  },1000);
+}
+
+function onSendChannelStateChange(){
+  var readyState = dataChannel.readyState;
+  console.log('ready state is ' , readyState);
+  if(readyState === 'open'){
+    console.log("data channel opend");
+    fileInput.disabled = false;
+    }
+  if(readyState === 'connecting'){
+    console.log("connecting data channel");
+  }
+  if(readyState === 'closed'){
+    console.log("send channel closed");
+  }
+
+}
 
 function onReceiveChannelStateChange(){
   var readyState = dataChannel.readyState;
+  if(readyState === 'open'){
+    console.log("receiver ready to receive data");
+  }
+  if(readyState === 'connecting'){
+    console.log("connecting data channel");
+  }
+  if(readyState === 'closed'){
+    console.log("recive channel closed");
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 
