@@ -35,6 +35,9 @@
       <td>
       <button  id="Join" style="height:50px;width:100px">Join</button>
       </td>
+      <td>
+      <button  id="disconnect" style="height:50px;width:100px">Disconnect</button>
+      </td>
     </tr>
     <tr class="break"><td colspan="5"></td></tr>
   <tr>
@@ -51,7 +54,7 @@
 
   <tr>
   <td>
-    <input type="radio" name="chunks" value="first" id = "one" checked> 20 KB<br>
+    <input type="radio" name="chunks" value="first" id = "one" checked> 20 KB         Recommonded<br>
     <input type="radio" name="chunks" value="second" id = "two" > 60 KB<br>
     <input type="radio" name="chunks" value="third" id = "three" > 500 KB<br>
     <input type="radio" name="chunks" value="four" id = "four" > 1024KB
@@ -66,7 +69,7 @@
   </tr>
   <td>
   <button id="sendFileUsingServer" style="height:50px;width:100px">send File server base</button>
-  
+
   </td>
   <tr>
     <td>
@@ -76,6 +79,7 @@
   </td>
   </tr>
   </table>
+  
 </div>
   <script src = "/socket.io/socket.io.js"></script>
   <script src = "https://webrtc.github.io/adapter/adapter-latest.js"></script>
