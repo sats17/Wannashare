@@ -1,5 +1,3 @@
-const fs = require('fs');
-const http = require('http');
 var socketIO = require('socket.io');
 var express = require('express');
 
@@ -8,13 +6,17 @@ var port = process.env.PORT || 8080 || 3000;
 
 var app = express();
 
+
+
+//app.use( express.static( __dirname + '/' ));
 app.use( express.static( __dirname + '/' ));
+
 app.get('/',function(req, res) {
   res.redirect('index.html');
 });
 
 var server = app.listen(port ,'0.0.0.0', ()=>{
-  console.log('server started on port ' );
+  console.log('server started on port',port );
 });
 
 
@@ -40,7 +42,7 @@ io.sockets.on('connection', function(socket) {
   socket.on('message', function(message) {
     log('Client said: ', message);
     // for a real app, would be room-only (not broadcast)
-    socket.broadcast.to(roomCreator).emit('message', message);
+    socket.to(roomCreator).emit('message', message);
   });
   socket.on('serverBaseDataShare',function(data){
     //console.log(data.Data);
@@ -66,8 +68,18 @@ socket.on('fileReceived', function(data) {
 socket.on('create', function(data) {
     roomCreator = data.email;
     log('Received request to create or join room ' + roomCreator);
+    var clientsInRoom = io.sockets.adapter.rooms[roomCreator];
+    var numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
 
-    socket.join(data.email);
+    if(numClients >= 1){
+      console.log("room already created");
+      socket.emit('roomCreateFull',roomCreator);
+    }
+    else{
+      socket.join(data.email);
+      socket.emit('roomCreated',roomCreator);
+    }
+
     log('Client ID ' + socket.id + ' created room ' + roomCreator);
     //socket.emit('created', room, socket.id);
 
@@ -110,8 +122,15 @@ socket.on("acceptConnection",function(data){
     io.sockets.in(roomCreator).emit('joinConfirmed',{creator:roomCreator,joiner:roomJoin});
   });
 
-  socket.on('disconnect',function(){
+  socket.on('disconnectFromUser',function(){
     console.log("room leave");
+    socket.leave(roomCreator,function(){
+      socket.broadcast.to(roomCreator).emit('userDisconnect', 'disconnected');
+    });
+
+  });
+  socket.on('disconnect',function(){
+
     socket.broadcast.to(roomCreator).emit('userDisconnect', 'disconnected');
   });
   socket.on('end', function (){
