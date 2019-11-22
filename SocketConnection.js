@@ -32,12 +32,12 @@ module.exports  = class SocketConnection{
           
           socket.on('FileMetaData', function(data) {
               log('Client said filename is : ', data.sendFileName , "And file size is ",data.sendFileSize );
-              // for a real app, would be room-only (not broadcast)
+              
               socket.broadcast.to(roomCreator).emit('FileMetaData', data);
             });
           socket.on('fileReceived', function(data) {
               log('Client said  : ', data);
-              // for a real app, would be room-only (not broadcast)
+             
               socket.broadcast.to(roomCreator).emit('fileReceived', data);
             });
           
