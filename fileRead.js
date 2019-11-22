@@ -224,6 +224,7 @@ socket.on('serverBaseDataReceive',function(event){
         const received = new Blob(receiveBuffer);
         console.log(received);
         downloadAnchor.href = URL.createObjectURL(received);
+        console.log(downloadAnchor.href)
         downloadAnchor.download = fileName;
         console.log("file name is ",fileName);
         //var download ='Click to download ',fileSize;
