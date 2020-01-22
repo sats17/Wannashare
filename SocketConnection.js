@@ -32,12 +32,12 @@ module.exports  = class SocketConnection{
           
           socket.on('FileMetaData', function(data) {
               log('Client said filename is : ', data.sendFileName , "And file size is ",data.sendFileSize );
-              
+              // for a real app, would be room-only (not broadcast)
               socket.broadcast.to(roomCreator).emit('FileMetaData', data);
             });
           socket.on('fileReceived', function(data) {
               log('Client said  : ', data);
-             
+              // for a real app, would be room-only (not broadcast)
               socket.broadcast.to(roomCreator).emit('fileReceived', data);
             });
           
@@ -73,9 +73,9 @@ module.exports  = class SocketConnection{
             console.log(data)
             currentObjSocketId = socket.id;
             console.log(currentObjSocketId)
-            roomCreator = data.roomCreatorName;
-            roomJoin = data.roomJoinerName;
-            console.log(data.roomJoinerName+"asas")
+            roomCreator = data.roomCreator;
+            roomJoin = data.newRoomJoiner;
+            console.log(data.newRoomJoiner+"  asas")
 
             let clientsInRoom = io.sockets.adapter.rooms[roomCreator];
             let numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
@@ -87,6 +87,7 @@ module.exports  = class SocketConnection{
               socket.emit('peerOffline',roomCreator);
             }
             else{
+              console.log("Sending request")
               io.sockets.in(roomCreator).emit('connectionRequest',{fromMail : roomJoin,socketid:currentObjSocketId});
             }
             });

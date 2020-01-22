@@ -82,12 +82,12 @@ function createAction(){
 
 function joinAction(){
 
-  var roomJoiner = prompt("Enter your unique name");
-  var room = prompt("Enter another peer name");
-  if(roomJoiner !== null && room !== null){
-      aliceStatusName.textContent = roomJoiner +" is connected.";
+  var newRoomJoiner = prompt("Enter your unique name");
+  var roomCreator = prompt("Enter another peer name");
+  if(newRoomJoiner !== null && roomCreator !== null){
+      aliceStatusName.textContent = newRoomJoiner +" is connected.";
 
-      socket.emit('join',{fromMail : roomJoiner ,toMail : room});
+      socket.emit('join',{"newRoomJoiner" : newRoomJoiner ,"roomCreator" : roomCreator});
       CreateRoom.disabled = true;
   }
 }//end of join Action
@@ -117,10 +117,10 @@ socket.on('roomCreateFull',function(data){
 
 });
 
-socket.on('isYouWantToConnect',function(data){
+socket.on('connectionRequest',function(data){
   var peerMail = data.fromMail;
   if (confirm("User "+peerMail+" wants to connect ?")) {
-        socket.emit("acceptConnection",{takeyourid:data.socketid});
+        socket.emit("connectionAccepted",{"roomJoinersSocketId":data.socketid});
     }
     else {
     socket.emit("rejectConnection");
@@ -137,16 +137,16 @@ socket.on('peerOffline',function(data){
 
 socket.on('connectionAccepted',function(data){
   console.log(data);
-  //prompt("connection created");
+  prompt("connection created");
 });
 
-socket.on('helpToCallSecondPeer',function(data){
+socket.on('invokeRoomJoiner',function(data){
   console.log(data);
 
   socket.emit('joinConfirm');
 });
 
-socket.on('joinConfirmed',function(data){
+socket.on('roomJoined',function(data){
   fileInput.disabled = false;
   DisconnectRoom.disabled = false;
   if(heCreateRoom){
