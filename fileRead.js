@@ -211,8 +211,8 @@ socket.on('fileReceived' , function(data){
     });
 //////////////////////////////////////////////////////////////
 socket.on('serverBaseDataReceive',function(event){
- // Progress.max = fileSize;
-  //receiveBuffer.push(event.ArrayData);
+  Progress.max = fileSize;
+  receiveBuffer.push(event.ArrayData);
   
   console.log(event.ArrayData.byteLength)
   receivedSize += event.ArrayData.byteLength;
@@ -473,7 +473,7 @@ function serverBaseSendFileAction() {
 
 
     fileReader.addEventListener('load', e => {
-
+        console.log(e.target.result.byteLength)
         socket.emit('serverBaseDataShare',{Data:e.target.result});
         offset += e.target.result.byteLength;
         Progress.value += e.target.result.byteLength;
