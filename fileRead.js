@@ -222,7 +222,7 @@ socket.on('serverBaseDataReceive',function(event){
         console.log("Debug - Inside complete section")
         receivedSize = 0;
 
-        const received = new Blob(null);
+        const received = new Blob(receiveBuffer);
         console.log(received);
         downloadAnchor.href = URL.createObjectURL(received);
         console.log(downloadAnchor.href)
