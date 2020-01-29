@@ -211,9 +211,10 @@ socket.on('fileReceived' , function(data){
     });
 //////////////////////////////////////////////////////////////
 socket.on('serverBaseDataReceive',function(event){
-  Progress.max = fileSize;
-  receiveBuffer.push(event.ArrayData);
-
+ // Progress.max = fileSize;
+  //receiveBuffer.push(event.ArrayData);
+  
+ // console.log(
   receivedSize += event.ArrayData.byteLength;
 
   Progress.value += event.ArrayData.byteLength;
@@ -221,7 +222,7 @@ socket.on('serverBaseDataReceive',function(event){
 
         receivedSize = 0;
 
-        const received = new Blob(receiveBuffer);
+        const received = new Blob(null);
         console.log(received);
         downloadAnchor.href = URL.createObjectURL(received);
         console.log(downloadAnchor.href)
