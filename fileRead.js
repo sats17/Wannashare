@@ -214,12 +214,12 @@ socket.on('serverBaseDataReceive',function(event){
  // Progress.max = fileSize;
   //receiveBuffer.push(event.ArrayData);
   
- // console.log(
+  console.log(event.ArrayData.byteLength)
   receivedSize += event.ArrayData.byteLength;
 
   Progress.value += event.ArrayData.byteLength;
   if(receivedSize === fileSize){
-
+        console.log("Debug - Inside complete section")
         receivedSize = 0;
 
         const received = new Blob(null);
