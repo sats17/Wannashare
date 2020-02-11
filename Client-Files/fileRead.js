@@ -1,6 +1,6 @@
 'use strict';
+
 var pc;
-var reader;
 var file;
 var dataChannel;
 var fileReader;
@@ -9,36 +9,19 @@ var fileName;
 var receiveChannel;
 let receivedSize = 0;
 
-var heCreateRoom = false;
+var isHeCreatesRoom = false;
 
 let receiveBuffer = [];
 var anotherpeer = false;
 
-var pcConfig = {
-  'iceServers': [{'urls': 'stun:stun.l.google.com:19302'},
-    {'urls':'stun:stun1.l.google.com:19302'},
-    {'urls':'stun:stun2.l.google.com:19302'},
-    {'urls':'stun:stun3.l.google.com:19302'},
-    {'urls':'stun:stun4.l.google.com:19302'},
-  {
-    "urls": [
-      "turn:13.250.13.83:3478?transport=udp"
-    ],
-    "username": "YzYNCouZM1mhqhmseWk6",
-    "credential": "YzYNCouZM1mhqhmseWk6"
-  }
-]
-};
 
-
-const fileInput = document.querySelector('input#fileInput');
-fileInput.disabled = true;
-var fullPath = document.getElementById('fileInput').value;
+const fileSelector = document.querySelector('input#fileSelector');
+fileSelector.disabled = true;
 var fileNameField = document.getElementById('fileName');
 var aliceStatusName = document.getElementById('aliceStatus');
 
 
-fileInput.addEventListener('change', handleFileSelect, false);
+fileSelector.addEventListener('change', handleFileSelect, false);
 
 var CreateRoom = document.querySelector('button#Create');
 var JoinRoom = document.querySelector('button#Join');
@@ -54,27 +37,24 @@ const Progress = document.querySelector('progress#progress');
 sendFile.disabled = true;
 serverBaseSendFile.disabled = true;
 DisconnectRoom.disabled = true;
-//CreateRoom.disabled = true;
 CreateRoom.onclick = createAction;
 JoinRoom.onclick = joinAction;
 sendFile.onclick = sendFileAction;
 DisconnectRoom.onclick = disconnectAction;
 serverBaseSendFile.onclick = serverBaseSendFileAction;
 
-//fileInput.onclick = handleFileSelect;
+//fileSelector.onclick = handleFileSelect;
 
 
-var socket = io.connect();
-
+var socket = socketConfig;
 
 function createAction(){
-  //userName = prompt("Enter your name:");
   var roomCreator = prompt('Enter your unique name:');
 
   if (roomCreator !== null) {
     socket.emit('create', {email : roomCreator});
     console.log('Attempted to create or  join roomCreator', roomCreator);
-    heCreateRoom = true;
+    isHeCreatesRoom = true;
     JoinRoom.disabled = true;
   }
 
@@ -100,7 +80,7 @@ function disconnectAction(){
   JoinRoom.disabled = false;
   dataChannel.close();
   pc.close();
-  fileInput.disabled = true;
+  fileSelector.disabled = true;
   sendFile.disabled = true;
 }
 
@@ -147,9 +127,9 @@ socket.on('invokeRoomJoiner',function(data){
 });
 
 socket.on('roomJoined',function(data){
-  fileInput.disabled = false;
+  fileSelector.disabled = false;
   DisconnectRoom.disabled = false;
-  if(heCreateRoom){
+  if(isHeCreatesRoom){
     bobStatus.textContent = data.joiner+" is connected";
     startServerlessConnection();
   }
@@ -205,7 +185,7 @@ socket.on('fileReceived' , function(data){
       Progress.value = 0;
       //alert("file received to another peer");
       fileSentToast();
-      fileInput.value = '';
+      fileSelector.value = '';
       sendFile.disabled = true;
       serverBaseSendFile.disabled = true;
     });
@@ -249,7 +229,7 @@ socket.on('userDisconnect',function(data){
   JoinRoom.disabled = false;
   dataChannel.close();
   pc.close();
-  fileInput.disabled = true;
+  fileSelector.disabled = true;
   sendFile.disabled = true;
 });
 
@@ -260,18 +240,17 @@ function startServerlessConnection() {
     console.log('>>>>>> creating peer connection');
       createPeerConnection();
 
-      console.log('heCreateRoom', heCreateRoom);
-      if (heCreateRoom) {
+      console.log('isHeCreatesRoom', isHeCreatesRoom);
+      if (isHeCreatesRoom) {
         doCall();
       }
 
 }//end of function startServerlessConnection
-
+console.log(pcConfig)
 
 function createPeerConnection() {
     try {
       pc = new RTCPeerConnection(pcConfig);
-      //console.log("rtc peer connection start before ice");
       const dataChannelOptions = {
         ordered: true,
         maxPacketLifeTime: 3000,
@@ -280,6 +259,7 @@ function createPeerConnection() {
       dataChannel = pc.createDataChannel("chat" , dataChannelOptions);
       dataChannel.onopen = onSendChannelStateChange;
       dataChannel.binaryType = 'arraybuffer';
+      dataChannel.readyState
       pc.ondatachannel = reciveChannelCallback;
       pc.onicecandidate = handleIceCandidate;
       pc.oniceconnectionstatechange = handleIceCandidateEvents;
@@ -359,7 +339,7 @@ function handleFileSelect(evt){
   else{
     sendFile.disabled = false;
     serverBaseSendFile.disabled = false;
-    var filename = fileInput.files[0].name;
+    var filename = fileSelector.files[0].name;
     fileNameField.textContent = filename;
     console.log("Full path is ", filename);
 
@@ -371,7 +351,7 @@ function handleFileSelect(evt){
 
 
 function sendFileAction() {
-    file = fileInput.files[0];
+    file = fileSelector.files[0];
 
     if(file.size === 0){
       alert("File size is zero");
@@ -415,6 +395,7 @@ function sendFileAction() {
 
     fileReader.addEventListener('load', e => {
       //console.log('FileRead.onload ', e);
+      console.log('ready state is ' , dataChannel.readyState);
         dataChannel.send(e.target.result);
         offset += e.target.result.byteLength;
         Progress.value += e.target.result.byteLength;
@@ -432,7 +413,7 @@ function sendFileAction() {
 }// end of sendFileAction
 
 function serverBaseSendFileAction() {
-    file = fileInput.files[0];
+    file = fileSelector.files[0];
 
     if(file.size === 0){
       alert("File size is zero");
@@ -579,8 +560,8 @@ function onSendChannelStateChange(){
   console.log('ready state is ' , readyState);
   if(readyState === 'open'){
     console.log("data channel opend");
-    //fileInput.disabled = false;
-    }
+    //fileSelector.disabled = false;
+  }
   if(readyState === 'connecting'){
     console.log("connecting data channel");
   }

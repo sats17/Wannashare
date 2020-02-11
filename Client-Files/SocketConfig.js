@@ -1,0 +1,1 @@
+const socketConfig = io.connect();
