@@ -7,7 +7,7 @@ var fileReader;
 var fileSize = 0;
 var fileName;
 var receiveChannel;
-let receivedSize = 0;
+let receivedBufferSize = 0;
 
 var isHeCreatesRoom = false;
 
@@ -39,7 +39,7 @@ serverBaseSendFile.disabled = true;
 DisconnectRoom.disabled = true;
 CreateRoom.onclick = createAction;
 JoinRoom.onclick = joinAction;
-sendFile.onclick = sendFileAction;
+sendFile.onclick = serverLessSendFileAction;
 DisconnectRoom.onclick = disconnectAction;
 serverBaseSendFile.onclick = serverBaseSendFileAction;
 
@@ -195,12 +195,12 @@ socket.on('serverBaseDataReceive',function(event){
   receiveBuffer.push(event.ArrayData);
   
   console.log(event.ArrayData.byteLength)
-  receivedSize += event.ArrayData.byteLength;
+  receivedBufferSize += event.ArrayData.byteLength;
 
   Progress.value += event.ArrayData.byteLength;
-  if(receivedSize === fileSize){
+  if(receivedBufferSize === fileSize){
         console.log("Debug - Inside complete section")
-        receivedSize = 0;
+        receivedBufferSize = 0;
 
         const received = new Blob(receiveBuffer);
         console.log(received);
@@ -343,14 +343,12 @@ function handleFileSelect(evt){
     fileNameField.textContent = filename;
     console.log("Full path is ", filename);
 
-    var filesize = fileCheck.size;
-
-    socket.emit("FileMetaData" , {sendFileName : filename , sendFileSize : filesize });
+    socket.emit("FileMetaData" , {sendFileName : filename , sendFileSize : fileCheck.size });
   }
 }
 
 
-function sendFileAction() {
+function serverLessSendFileAction() {
     file = fileSelector.files[0];
 
     if(file.size === 0){
@@ -509,11 +507,11 @@ function onReceiveMessageCallback(event) {
   Progress.max = fileSize;
   receiveBuffer.push(event.data);
 
-  receivedSize += event.data.byteLength;
+  receivedBufferSize += event.data.byteLength;
 
   Progress.value += event.data.byteLength;
-  if(receivedSize === fileSize){
-        receivedSize = 0;
+  if(receivedBufferSize === fileSize){
+        receivedBufferSize = 0;
         //var uarray = Uint8Array.from(receiveBuffer);
         //console.log("typed array is =",uarray);
         const received = new Blob(receiveBuffer);
