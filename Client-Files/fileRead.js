@@ -1,77 +1,94 @@
 'use strict';
 
-var pc;
-var file;
-var dataChannel;
-var fileReader;
-var fileSize = 0;
-var fileName;
-var receiveChannel;
+/*
+  Required Variables
+*/
+let pc;
+let file;
+let dataChannel;
+let fileReader;
+let fileSize = 0;
+let fileName;
+let receiveChannel;
 let receivedBufferSize = 0;
-
-var isHeCreatesRoom = false;
-
+let isHeCreatesRoom = false;
 let receiveBuffer = [];
-var anotherpeer = false;
+let anotherpeer = false;
 
 
+/*
+  Html GUI Selectors.
+*/
 const fileSelector = document.querySelector('input#fileSelector');
-fileSelector.disabled = true;
-var fileNameField = document.getElementById('fileName');
-var aliceStatusName = document.getElementById('aliceStatus');
-
-
-fileSelector.addEventListener('change', handleFileSelect, false);
-
-var CreateRoom = document.querySelector('button#Create');
-var JoinRoom = document.querySelector('button#Join');
-var sendFile = document.querySelector('button#sendFile');
-var DisconnectRoom = document.querySelector('button#disconnect');
-var serverBaseSendFile = document.querySelector('button#sendFileUsingServer');
-
-
-
+let fileNameField = document.getElementById('fileName');
+let aliceStatusName = document.getElementById('aliceStatus');
+let CreateRoom = document.querySelector('button#Create');
+let JoinRoom = document.querySelector('button#Join');
+let sendFile = document.querySelector('button#sendFile');
+let DisconnectRoom = document.querySelector('button#disconnect');
+let serverBaseSendFile = document.querySelector('button#sendFileUsingServer');
 const downloadAnchor = document.querySelector('a#download');
 const Progress = document.querySelector('progress#progress');
 
+/*
+  Event Listners.
+*/
+fileSelector.addEventListener('change', handleFileSelect, false);
+
+/*
+  HTML GUI Flags.
+*/
+fileSelector.disabled = true;
 sendFile.disabled = true;
 serverBaseSendFile.disabled = true;
 DisconnectRoom.disabled = true;
+
+
+/*
+  Function Calls when HTML GUI triggers.
+*/
 CreateRoom.onclick = createAction;
 JoinRoom.onclick = joinAction;
 sendFile.onclick = serverLessSendFileAction;
 DisconnectRoom.onclick = disconnectAction;
 serverBaseSendFile.onclick = serverBaseSendFileAction;
 
-//fileSelector.onclick = handleFileSelect;
+/*
+  Creates instance of socket connection.
+*/
+let socket = socketConfig;
 
-
-var socket = socketConfig;
-
+/* 
+  When user click on Create button, this function will run.
+*/
 function createAction(){
-  var roomCreator = prompt('Enter your unique name:');
-
+  let roomCreator = prompt('Enter your unique name:');
   if (roomCreator !== null) {
     socket.emit('create', {email : roomCreator});
     console.log('Attempted to create or  join roomCreator', roomCreator);
     isHeCreatesRoom = true;
     JoinRoom.disabled = true;
+    CreateRoom.disabled = true;
   }
+}//end of createAction function
 
-}//end of start function
-
+/*
+  When user click on Join button, this function will run.
+*/
 function joinAction(){
-
-  var newRoomJoiner = prompt("Enter your unique name");
-  var roomCreator = prompt("Enter another peer name");
+  let newRoomJoiner = prompt("Enter your unique name");
+  let roomCreator = prompt("Enter another peer name");
   if(newRoomJoiner !== null && roomCreator !== null){
       aliceStatusName.textContent = newRoomJoiner +" is connected.";
-
       socket.emit('join',{"newRoomJoiner" : newRoomJoiner ,"roomCreator" : roomCreator});
       CreateRoom.disabled = true;
+      JoinRoom.disabled = true;
   }
-}//end of join Action
+}//end of joinAction function
 
+/*
+  When user click on Disconnect button, this function will run.
+*/
 function disconnectAction(){
   socket.emit('disconnectFromUser');
   bobStatus.textContent = "disconnected";
@@ -84,21 +101,17 @@ function disconnectAction(){
   sendFile.disabled = true;
 }
 
-///////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////
+
 socket.on('roomCreated',function(data){
   aliceStatusName.textContent = data +" is connected.";
-
 });
+
 socket.on('roomCreateFull',function(data){
-
   DownloadToast();
-
-
 });
 
 socket.on('connectionRequest',function(data){
-  var peerMail = data.fromMail;
+  let peerMail = data.fromMail;
   if (confirm("User "+peerMail+" wants to connect ?")) {
         socket.emit("connectionAccepted",{"roomJoinersSocketId":data.socketid});
     }
