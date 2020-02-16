@@ -109,6 +109,9 @@ module.exports  = class SocketConnection{
             socket.on('disconnectFromUser',function(){
               console.log("room leave");
               socket.leave(roomCreator,function(){
+                var clientsInRoom = io.sockets.adapter.rooms[roomCreator];
+                var numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
+                console.log("DEBUG - After disconnect number of clients in room -> "+numClients)
                 socket.broadcast.to(roomCreator).emit('userDisconnect', 'disconnected');
               });
           

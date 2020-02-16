@@ -107,6 +107,7 @@ socket.on('roomCreated',function(data){
 });
 
 socket.on('roomCreateFull',function(data){
+  console.log("room full")
   DownloadToast();
 });
 
@@ -114,14 +115,14 @@ socket.on('connectionRequest',function(data){
   let peerMail = data.fromMail;
   if (confirm("User "+peerMail+" wants to connect ?")) {
         socket.emit("connectionAccepted",{"roomJoinersSocketId":data.socketid});
-    }
-    else {
+  }
+  else {
     socket.emit("rejectConnection");
   }
 });
 
 socket.on('roomFull',function(data){
-  console.log(data+" is currently connect with other user");
+  console.log(data+" is currently connected with other user");
 });
 
 socket.on('peerOffline',function(data){
@@ -135,10 +136,12 @@ socket.on('connectionAccepted',function(data){
 
 socket.on('invokeRoomJoiner',function(data){
   console.log(data);
-
   socket.emit('joinConfirm');
 });
 
+/*
+  This socket event help first user to start webrtc connection.
+*/
 socket.on('roomJoined',function(data){
   fileSelector.disabled = false;
   DisconnectRoom.disabled = false;
@@ -151,17 +154,14 @@ socket.on('roomJoined',function(data){
   }
 });
 
-
-/////////////////////////////////////////////////////////////////////////////
-///////// receive socket event section //////////////////////////////////////////////////////
-
-
 socket.on('log', function(array) {
   console.log.apply(console, array);
 });
 
-////////////////////////////////////////////////
-// This client receives a message
+
+/*
+  Handles webrtc connection by sending message throught this socket event.
+*/
 socket.on('message', function(message) {
   console.log('Client received message:', message);
   if (message.type === 'offer') {
@@ -184,37 +184,43 @@ socket.on('message', function(message) {
 
 });
 
-////////////////////// Meta data receive events //////////////////////////////////
-
+/*
+  Set file metadata using this event.
+*/
 socket.on("FileMetaData" , function(data){
-      console.log(data);
       console.log("file size is ", data.sendFileSize , " file name is ",data.sendFileName);
       fileSize = data.sendFileSize;
       fileName = data.sendFileName;
     });
-//////////////////////////////////////////////////////////////////////
+
+/*
+  event triggers when file data completly received.
+*/
 socket.on('fileReceived' , function(data){
       console.log("rec file size",data);
       Progress.value = 0;
-      //alert("file received to another peer");
       fileSentToast();
       fileSelector.value = '';
       sendFile.disabled = true;
       serverBaseSendFile.disabled = true;
     });
-//////////////////////////////////////////////////////////////
+
+/*
+  Event triggers when file data received.
+*/
 socket.on('serverBaseDataReceive',function(event){
-  Progress.max = fileSize;
+  if(fileSelector.disabled == false){
+    fileSelector.disabled = true;
+  }
   receiveBuffer.push(event.ArrayData);
   
   console.log(event.ArrayData.byteLength)
   receivedBufferSize += event.ArrayData.byteLength;
-
   Progress.value += event.ArrayData.byteLength;
+
   if(receivedBufferSize === fileSize){
         console.log("Debug - Inside complete section")
         receivedBufferSize = 0;
-
         const received = new Blob(receiveBuffer);
         console.log(received);
         downloadAnchor.href = URL.createObjectURL(received);
@@ -223,18 +229,20 @@ socket.on('serverBaseDataReceive',function(event){
         console.log("file name is ",fileName);
         //var download ='Click to download ',fileSize;
         console.log(fileSize);
-        downloadAnchor.textContent = 'Click to download ';
+        downloadAnchor.textContent = 'Click to download file = '+fileName;
         socket.emit("fileReceived" , "file receives");
         console.log("received.size here we reach");
         receiveBuffer = [];
         Progress.value = 0;
+        fileSelector.disabled = false;
         DownloadToast();
-
       }
 
 });
-//////////////////////////////////////////////////////////////
 
+/*
+  Event trigger when on of the user disconnects.
+*/
 socket.on('userDisconnect',function(data){
   bobStatus.textContent = "disconnected";
   DisconnectRoom.disabled = true;

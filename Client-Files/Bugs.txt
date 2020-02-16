@@ -1,0 +1,3 @@
+1) File progress not getting reset for file sender. //Fixed
+2) Disconnect for room joiner not works properly // Till analysis - When room creator disconnects , 
+then room joiner gets disconnect and room creator not.
