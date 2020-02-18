@@ -1,3 +1,10 @@
 1) File progress not getting reset for file sender. //Fixed
 2) Disconnect for room joiner not works properly // Till analysis - When room creator disconnects , 
 then room joiner gets disconnect and room creator not.
+3) When room is full it should not disabled buttons .
+
+
+
+Last Work - "Identitfy that socket is different and room is different , when we leave room socket will not
+            close " , last day added user identifier in client side and that name emits to server when disconnect
+            event start "

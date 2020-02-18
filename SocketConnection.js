@@ -48,7 +48,7 @@ module.exports  = class SocketConnection{
           socket.on('create', function(data) {
               roomCreator = data.email;
               currentObjSocketId = socket.id;
-              console.log(currentObjSocketId)
+              console.log("DEBUG--- Room Creator Socket ID "+currentObjSocketId)
               console.log(roomCreator)
               log('Received request to create or join room ' + roomCreator);
               var clientsInRoom = io.sockets.adapter.rooms[roomCreator];
@@ -72,7 +72,7 @@ module.exports  = class SocketConnection{
           socket.on('join',function(data){
             console.log(data)
             currentObjSocketId = socket.id;
-            console.log(currentObjSocketId)
+            console.log("DEBUG--- Room Joiner Socket ID "+currentObjSocketId)
             roomCreator = data.roomCreator;
             roomJoin = data.newRoomJoiner;
             console.log(data.newRoomJoiner+"  asas")
@@ -106,15 +106,19 @@ module.exports  = class SocketConnection{
               io.sockets.in(roomCreator).emit('roomJoined',{creator:roomCreator,joiner:roomJoin});
             });
           
-            socket.on('disconnectFromUser',function(){
-              console.log("room leave");
+            socket.on('disconnectFromUser',function(data){
+              console.log(socket.id)
+              console.log("room leave from "+data.disconnectedUser);
+              let clientsInRoom = io.sockets.adapter.rooms[roomCreator];
+              console.log("Clients In room "+Object.keys(clientsInRoom.sockets))
+              if(data.disconnectedUser === roomCreator){
+                console.log(Object.keys(clientsInRoom.sockets))
+              }
               socket.leave(roomCreator,function(){
-                var clientsInRoom = io.sockets.adapter.rooms[roomCreator];
-                var numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
+                let numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
                 console.log("DEBUG - After disconnect number of clients in room -> "+numClients)
                 socket.broadcast.to(roomCreator).emit('userDisconnect', 'disconnected');
               });
-          
             });
             socket.on('disconnect',function(){
           

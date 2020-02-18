@@ -14,6 +14,7 @@ let receivedBufferSize = 0;
 let isHeCreatesRoom = false;
 let receiveBuffer = [];
 let anotherpeer = false;
+let currentUser;
 
 
 /*
@@ -90,7 +91,8 @@ function joinAction(){
   When user click on Disconnect button, this function will run.
 */
 function disconnectAction(){
-  socket.emit('disconnectFromUser');
+  console.log("Current user is "+currentUser)
+  socket.emit('disconnectFromUser',{"disconnectedUser":currentUser});
   bobStatus.textContent = "disconnected";
   DisconnectRoom.disabled = true;
   CreateRoom.disabled = false;
@@ -100,6 +102,21 @@ function disconnectAction(){
   fileSelector.disabled = true;
   sendFile.disabled = true;
 }
+
+/*
+  Event trigger when on of the user disconnects.
+*/
+socket.on('userDisconnect',function(data){
+  console.log("Which User is dicoonnect")
+  bobStatus.textContent = "disconnected";
+  DisconnectRoom.disabled = true;
+  //CreateRoom.disabled = false;
+  //JoinRoom.disabled = false;
+  dataChannel.close();
+  pc.close();
+  fileSelector.disabled = true;
+  sendFile.disabled = true;
+});
 
 
 socket.on('roomCreated',function(data){
@@ -147,10 +164,14 @@ socket.on('roomJoined',function(data){
   DisconnectRoom.disabled = false;
   if(isHeCreatesRoom){
     bobStatus.textContent = data.joiner+" is connected";
+    currentUser = data.creator;
+    console.log("DEBUG ----- "+currentUser)
     startServerlessConnection();
   }
   else{
     bobStatus.textContent = data.creator+" is connected";
+    currentUser = data.joiner;
+    console.log("DEBUG ----- "+currentUser)
   }
 });
 
@@ -240,19 +261,7 @@ socket.on('serverBaseDataReceive',function(event){
 
 });
 
-/*
-  Event trigger when on of the user disconnects.
-*/
-socket.on('userDisconnect',function(data){
-  bobStatus.textContent = "disconnected";
-  DisconnectRoom.disabled = true;
-  CreateRoom.disabled = false;
-  JoinRoom.disabled = false;
-  dataChannel.close();
-  pc.close();
-  fileSelector.disabled = true;
-  sendFile.disabled = true;
-});
+
 
 //////////////////////////////////////////////////////////////////////////
 function startServerlessConnection() {
