@@ -8,7 +8,7 @@ module.exports  = class SocketConnection{
           //  var roomCreator;
           
             var roomCreatorSocketId;
-            var currentObjSocketId;
+            var roomJoinerSocketId;
             var roomCreator;
             var roomJoin;
           
@@ -47,8 +47,8 @@ module.exports  = class SocketConnection{
           
           socket.on('create', function(data) {
               roomCreator = data.email;
-              currentObjSocketId = socket.id;
-              console.log("DEBUG--- Room Creator Socket ID "+currentObjSocketId)
+              roomCreatorSocketId = socket.id;
+              console.log("DEBUG--- Room Creator Socket ID "+roomCreatorSocketId)
               console.log(roomCreator)
               log('Received request to create or join room ' + roomCreator);
               var clientsInRoom = io.sockets.adapter.rooms[roomCreator];
@@ -62,17 +62,14 @@ module.exports  = class SocketConnection{
                 socket.join(data.email);
                 socket.emit('roomCreated',roomCreator);
               }
-          
               log('Client ID ' + socket.id + ' created room ' + roomCreator);
-              //socket.emit('created', room, socket.id);
-          
           
           });
 
           socket.on('join',function(data){
-            console.log(data)
-            currentObjSocketId = socket.id;
-            console.log("DEBUG--- Room Joiner Socket ID "+currentObjSocketId)
+
+            roomJoinerSocketId = socket.id;
+            console.log("DEBUG--- Room Joiner Socket ID "+roomJoinerSocketId)
             roomCreator = data.roomCreator;
             roomJoin = data.newRoomJoiner;
             console.log(data.newRoomJoiner+"  asas")
@@ -88,13 +85,13 @@ module.exports  = class SocketConnection{
             }
             else{
               console.log("Sending request")
-              io.sockets.in(roomCreator).emit('connectionRequest',{fromMail : roomJoin,socketid:currentObjSocketId});
+              io.sockets.in(roomCreator).emit('connectionRequest',{fromMail : roomJoin,socketid:roomJoinerSocketId});
             }
             });
           
           socket.on("connectionAccepted",function(data){
-          
-              io.sockets.in(data.roomJoinersSocketId).emit('invokeRoomJoiner');
+              roomJoinerSocketId = data.roomJoinerSocketId
+              io.sockets.in(data.roomJoinerSocketId).emit('invokeRoomJoiner');
 
             });
           
@@ -112,13 +109,23 @@ module.exports  = class SocketConnection{
               let clientsInRoom = io.sockets.adapter.rooms[roomCreator];
               console.log("Clients In room "+Object.keys(clientsInRoom.sockets))
               if(data.disconnectedUser === roomCreator){
-                console.log(Object.keys(clientsInRoom.sockets))
+                console.log("Room Creator socketId "+roomCreatorSocketId)
+                console.log("Room Joiner socketId "+roomJoinerSocketId)
+                io.of('/').connected[roomJoinerSocketId].leave(roomCreator,function(){
+                  let numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
+                  console.log("DEBUG - After disconnect number of clients in room -> "+numClients)
+                  socket.broadcast.to(roomCreator).emit('userDisconnect', 'disconnected');
+                  console.log("Clients In room "+Object.keys(clientsInRoom.sockets))
+                });
               }
+              else{
               socket.leave(roomCreator,function(){
                 let numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
                 console.log("DEBUG - After disconnect number of clients in room -> "+numClients)
                 socket.broadcast.to(roomCreator).emit('userDisconnect', 'disconnected');
+                console.log("Clients In room "+Object.keys(clientsInRoom.sockets))
               });
+            }
             });
             socket.on('disconnect',function(){
           

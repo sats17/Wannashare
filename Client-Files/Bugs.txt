@@ -5,6 +5,10 @@ then room joiner gets disconnect and room creator not.
 
 
 
-Last Work - "Identitfy that socket is different and room is different , when we leave room socket will not
+First Last Work - "Identitfy that socket is different and room is different , when we leave room socket will not
             close " , last day added user identifier in client side and that name emits to server when disconnect
             event start "
+
+20-02-2020 - "Refactor the server side socket connection code and remove currentUserSocketId and seperate it into
+                roomCreator and roomJoiner ID . because server side need the room joiner socket ID when room creator 
+                hits disconnect call , so room joiner can be disconnect automatically.

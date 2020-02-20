@@ -23,6 +23,7 @@ let currentUser;
 const fileSelector = document.querySelector('input#fileSelector');
 let fileNameField = document.getElementById('fileName');
 let aliceStatusName = document.getElementById('aliceStatus');
+let bobStatusName = document.getElementById('bobStatus');
 let CreateRoom = document.querySelector('button#Create');
 let JoinRoom = document.querySelector('button#Join');
 let sendFile = document.querySelector('button#sendFile');
@@ -93,7 +94,7 @@ function joinAction(){
 function disconnectAction(){
   console.log("Current user is "+currentUser)
   socket.emit('disconnectFromUser',{"disconnectedUser":currentUser});
-  bobStatus.textContent = "disconnected";
+  bobStatusName.textContent = "disconnected";
   DisconnectRoom.disabled = true;
   CreateRoom.disabled = false;
   JoinRoom.disabled = false;
@@ -108,7 +109,7 @@ function disconnectAction(){
 */
 socket.on('userDisconnect',function(data){
   console.log("Which User is dicoonnect")
-  bobStatus.textContent = "disconnected";
+  bobStatusName.textContent = "disconnected";
   DisconnectRoom.disabled = true;
   //CreateRoom.disabled = false;
   //JoinRoom.disabled = false;
@@ -131,7 +132,7 @@ socket.on('roomCreateFull',function(data){
 socket.on('connectionRequest',function(data){
   let peerMail = data.fromMail;
   if (confirm("User "+peerMail+" wants to connect ?")) {
-        socket.emit("connectionAccepted",{"roomJoinersSocketId":data.socketid});
+        socket.emit("connectionAccepted",{"roomJoinerSocketId":data.socketid});
   }
   else {
     socket.emit("rejectConnection");
@@ -163,13 +164,13 @@ socket.on('roomJoined',function(data){
   fileSelector.disabled = false;
   DisconnectRoom.disabled = false;
   if(isHeCreatesRoom){
-    bobStatus.textContent = data.joiner+" is connected";
+    bobStatusName.textContent = data.joiner+" is connected";
     currentUser = data.creator;
     console.log("DEBUG ----- "+currentUser)
     startServerlessConnection();
   }
   else{
-    bobStatus.textContent = data.creator+" is connected";
+    bobStatusName.textContent = data.creator+" is connected";
     currentUser = data.joiner;
     console.log("DEBUG ----- "+currentUser)
   }
