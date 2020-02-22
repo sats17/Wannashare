@@ -13,7 +13,7 @@ div.container {
 
 }
 
- #toast{
+ #FileSentToast{
    position: fixed;
    background-color: #34EDEA;
    top:0;
@@ -26,11 +26,28 @@ div.container {
    visibility: hidden;
  }
 
- #toast.show{
+ #FileSentToast.show{
    visibility: visible;
  }
 
- #toastRead{
+ #FileRecieveToast{
+  position: fixed;
+  background-color: #34EDEA;
+  top:0;
+  left: 50%;
+  color:red;
+  padding:16px;
+  border-radius: center;
+  z-index: 1;
+  box-shadow:0 0 20px rgba(0, 0, 0, 0.3);
+  visibility: hidden;
+}
+
+#FileRecieveToast.show{
+  visibility: visible;
+}
+
+ #WaitMessageToast{ 
    position: fixed;
    background-color: #34EDEA;
    top:0;
@@ -43,9 +60,26 @@ div.container {
    visibility: hidden;
  }
 
- #toastRead.show{
+ #WaitMessageToast.show{
    visibility: visible;
  }
+
+ #RoomFullToast{ 
+  position: fixed;
+  background-color: #34EDEA;
+  top:0;
+  left: 50%;
+  color:red;
+  padding:16px;
+  border-radius: center;
+  z-index: 1;
+  box-shadow:0 0 20px rgba(0, 0, 0, 0.3);
+  visibility: hidden;
+}
+
+#RoomFullToast.show{
+  visibility: visible;
+}
 
  tr.break td {
   height: 10px;

@@ -93,40 +93,64 @@ function joinAction(){
 */
 function disconnectAction(){
   console.log("Current user is "+currentUser)
-  socket.emit('disconnectFromUser',{"disconnectedUser":currentUser});
-  bobStatusName.textContent = "disconnected";
-  DisconnectRoom.disabled = true;
-  CreateRoom.disabled = false;
-  JoinRoom.disabled = false;
-  dataChannel.close();
-  pc.close();
-  fileSelector.disabled = true;
-  sendFile.disabled = true;
+  socket.emit('disconnectFromRoom',{"disconnectedUser":currentUser});
 }
 
 /*
-  Event trigger when on of the user disconnects.
+  Event trigger when the user disconnects.
 */
 socket.on('userDisconnect',function(data){
-  console.log("Which User is dicoonnect")
-  bobStatusName.textContent = "disconnected";
-  DisconnectRoom.disabled = true;
-  //CreateRoom.disabled = false;
-  //JoinRoom.disabled = false;
-  dataChannel.close();
-  pc.close();
-  fileSelector.disabled = true;
-  sendFile.disabled = true;
+  console.log("this event emit")
+  console.log(data.disconnectFromRoomCreator)
+  if(data.disconnectFromRoomCreator){
+    console.log("true event emit")
+    fileSelector.disabled = true;
+    sendFile.disabled = true;
+    bobStatusName.textContent = "disconnected";
+    DisconnectRoom.disabled = true;
+    dataChannel.close();
+    pc.close();
+  }
+  else{
+    console.log("false event emit")
+    bobStatusName.textContent = "disconnected"
+    aliceStatusName.textContent = "disconnected"
+    CreateRoom.disabled = false
+    JoinRoom.disabled = false
+    DisconnectRoom.disabled = true
+    dataChannel.close();
+    pc.close();
+  }
 });
 
+/*
+  This event helps user to change status after disconnects.
+*/
+socket.on('changeStatus',function(){
+  bobStatusName.textContent = "disconnected"
+  aliceStatusName.textContent = "disconnected"
+  CreateRoom.disabled = false
+  JoinRoom.disabled = false
+  DisconnectRoom.disabled = true
+  
+})
 
+/*
+  Event triggers when room created and help to set status.
+*/
 socket.on('roomCreated',function(data){
   aliceStatusName.textContent = data +" is connected.";
 });
 
-socket.on('roomCreateFull',function(data){
+/*
+  Event trigger when room is already full.
+*/
+socket.on('roomFull',function(data){
   console.log("room full")
-  DownloadToast();
+  CreateRoom.disabled = false
+  JoinRoom.disabled = false
+  DisconnectRoom.disabled = true
+  roomFullToast();
 });
 
 socket.on('connectionRequest',function(data){
@@ -137,10 +161,6 @@ socket.on('connectionRequest',function(data){
   else {
     socket.emit("rejectConnection");
   }
-});
-
-socket.on('roomFull',function(data){
-  console.log(data+" is currently connected with other user");
 });
 
 socket.on('peerOffline',function(data){
@@ -154,7 +174,7 @@ socket.on('connectionAccepted',function(data){
 
 socket.on('invokeRoomJoiner',function(data){
   console.log(data);
-  socket.emit('joinConfirm');
+  socket.emit('joinConfirm',{'roomCreatorSocketId':data.socketid});
 });
 
 /*
@@ -257,7 +277,7 @@ socket.on('serverBaseDataReceive',function(event){
         receiveBuffer = [];
         Progress.value = 0;
         fileSelector.disabled = false;
-        DownloadToast();
+        fileReceiveToast();
       }
 
 });
@@ -531,7 +551,6 @@ function reciveChannelCallback(event){
     URL.revokeObjectURL(downloadAnchor.href);
     downloadAnchor.removeAttribute('href');
   }
-
 }
 
 function onReceiveMessageCallback(event) {
@@ -557,19 +576,19 @@ function onReceiveMessageCallback(event) {
         console.log("received.size here we reach");
         receiveBuffer = [];
         Progress.value = 0;
-        DownloadToast();
-
+        fileReceiveToast();
       }
 }
+
 function fileSentToast(){
-  var x = document.getElementById("toast");
+  var x = document.getElementById("FileSentToast");
   x.classList.add("show");
   setTimeout(function(){
     x.classList.remove("show");
   },1000);
 }
-function DownloadToast(){
-  var x = document.getElementById("Toast");
+function fileReceiveToast(){
+  var x = document.getElementById("FileRecieveToast");
   x.classList.add("show");
   setTimeout(function(){
     x.classList.remove("show");
@@ -577,7 +596,15 @@ function DownloadToast(){
 }
 
 function readToast(){
-  var x = document.getElementById("toastRead");
+  var x = document.getElementById("WaitMessageToast");
+  x.classList.add("show");
+  setTimeout(function(){
+    x.classList.remove("show");
+  },1000);
+}
+
+function roomFullToast(){
+  var x = document.getElementById("RoomFullToast");
   x.classList.add("show");
   setTimeout(function(){
     x.classList.remove("show");
@@ -597,7 +624,6 @@ function onSendChannelStateChange(){
   if(readyState === 'closed'){
     console.log("send channel closed");
   }
-
 }
 
 function onReceiveChannelStateChange(){

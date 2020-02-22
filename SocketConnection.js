@@ -1,12 +1,9 @@
-
 'use strict';
 
 module.exports  = class SocketConnection{
     constructor(io){
         io.sockets.on('connection', function(socket) {
             console.log("Socket enabled")
-          //  var roomCreator;
-          
             var roomCreatorSocketId;
             var roomJoinerSocketId;
             var roomCreator;
@@ -56,7 +53,7 @@ module.exports  = class SocketConnection{
           
               if(numClients >= 1){
                 console.log("room already created");
-                socket.emit('roomCreateFull',roomCreator);
+                socket.emit('roomFull',roomCreator);
               }
               else{
                 socket.join(data.email);
@@ -91,39 +88,35 @@ module.exports  = class SocketConnection{
           
           socket.on("connectionAccepted",function(data){
               roomJoinerSocketId = data.roomJoinerSocketId
-              io.sockets.in(data.roomJoinerSocketId).emit('invokeRoomJoiner');
+              io.sockets.in(data.roomJoinerSocketId).emit('invokeRoomJoiner',{"socketid":roomCreatorSocketId});
 
             });
           
             socket.on('joinConfirm',function(data){
               socket.join(roomCreator);
+              roomCreatorSocketId = data.roomCreatorSocketId;
               let clientsInRoom = io.sockets.adapter.rooms[roomCreator];
               let numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
               log('Room ' + roomCreator + ' now has ' + numClients + ' client(s)');
               io.sockets.in(roomCreator).emit('roomJoined',{creator:roomCreator,joiner:roomJoin});
             });
           
-            socket.on('disconnectFromUser',function(data){
-              console.log(socket.id)
-              console.log("room leave from "+data.disconnectedUser);
-              let clientsInRoom = io.sockets.adapter.rooms[roomCreator];
-              console.log("Clients In room "+Object.keys(clientsInRoom.sockets))
+            socket.on('disconnectFromRoom',function(data){
               if(data.disconnectedUser === roomCreator){
-                console.log("Room Creator socketId "+roomCreatorSocketId)
-                console.log("Room Joiner socketId "+roomJoinerSocketId)
+                console.log("Debug -- Room Leave from room creator")
+                io.sockets.in(roomJoinerSocketId).emit('changeStatus');
                 io.of('/').connected[roomJoinerSocketId].leave(roomCreator,function(){
-                  let numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
-                  console.log("DEBUG - After disconnect number of clients in room -> "+numClients)
-                  socket.broadcast.to(roomCreator).emit('userDisconnect', 'disconnected');
-                  console.log("Clients In room "+Object.keys(clientsInRoom.sockets))
+                  io.sockets.in(roomCreatorSocketId).emit('userDisconnect',{'disconnectFromRoomCreator':true});
                 });
               }
+
               else{
+              console.log("Debug -- Room Leave from room joiner")
               socket.leave(roomCreator,function(){
-                let numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
-                console.log("DEBUG - After disconnect number of clients in room -> "+numClients)
-                socket.broadcast.to(roomCreator).emit('userDisconnect', 'disconnected');
-                console.log("Clients In room "+Object.keys(clientsInRoom.sockets))
+                console.log(roomCreatorSocketId)
+                io.sockets.in(roomCreatorSocketId).emit('userDisconnect',{'disconnectFromRoomCreator':true})
+                io.sockets.in(roomJoinerSocketId).emit('userDisconnect',{'disconnectFromRoomCreator':false});
+                //console.log("Clients In room "+Object.keys(clientsInRoom.sockets))
               });
             }
             });

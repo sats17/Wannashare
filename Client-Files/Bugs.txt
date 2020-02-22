@@ -12,3 +12,7 @@ First Last Work - "Identitfy that socket is different and room is different , wh
 20-02-2020 - "Refactor the server side socket connection code and remove currentUserSocketId and seperate it into
                 roomCreator and roomJoiner ID . because server side need the room joiner socket ID when room creator 
                 hits disconnect call , so room joiner can be disconnect automatically.
+
+22-02-2020 - "Complete with disconnect call ,added roomCreatorID in socket joiner server instance which was left in 
+              previous part. added room full notification and next task is fix button bugs for room full and room join
+                for room full calls.
