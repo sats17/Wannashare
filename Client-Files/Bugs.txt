@@ -16,3 +16,6 @@ First Last Work - "Identitfy that socket is different and room is different , wh
 22-02-2020 - "Complete with disconnect call ,added roomCreatorID in socket joiner server instance which was left in 
               previous part. added room full notification and next task is fix button bugs for room full and room join
                 for room full calls.
+
+24-02-2020 - "Complete with room full and room join bug , added new notification and some condition for room name.
+              added console logs for better understanding. next task is try to fix next bugs .
