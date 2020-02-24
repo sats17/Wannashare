@@ -73,7 +73,7 @@ module.exports  = class SocketConnection{
 
             let clientsInRoom = io.sockets.adapter.rooms[roomCreator];
             let numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
-
+            console.log("DEBUG--Number of clients in room- "+numClients)
             if(numClients > 1){
               socket.emit('roomFull',roomCreator);
             }
@@ -81,7 +81,7 @@ module.exports  = class SocketConnection{
               socket.emit('peerOffline',roomCreator);
             }
             else{
-              console.log("Sending request")
+              socket.emit('connectionRequest-pending');
               io.sockets.in(roomCreator).emit('connectionRequest',{fromMail : roomJoin,socketid:roomJoinerSocketId});
             }
             });

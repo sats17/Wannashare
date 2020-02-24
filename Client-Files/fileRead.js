@@ -65,12 +65,13 @@ let socket = socketConfig;
 */
 function createAction(){
   let roomCreator = prompt('Enter your unique name:');
-  if (roomCreator !== null) {
+  if (roomCreator.length > 2) {
     socket.emit('create', {email : roomCreator});
-    console.log('Attempted to create or  join roomCreator', roomCreator);
-    isHeCreatesRoom = true;
-    JoinRoom.disabled = true;
-    CreateRoom.disabled = true;
+    console.log("INFO = Attempted to create a room by "+roomCreator);
+  }
+  else{
+    console.log("ERROR = Room name is not valid , hence room creation failed");
+    notAcceptableToast()
   }
 }//end of createAction function
 
@@ -80,11 +81,18 @@ function createAction(){
 function joinAction(){
   let newRoomJoiner = prompt("Enter your unique name");
   let roomCreator = prompt("Enter another peer name");
-  if(newRoomJoiner !== null && roomCreator !== null){
-      aliceStatusName.textContent = newRoomJoiner +" is connected.";
+  if(newRoomJoiner === roomCreator){
+    console.log("ERROR = Room joiner name and room creator name is same , hence room joining connection failed");
+    notAcceptableToast();
+    return true
+  }
+  if(newRoomJoiner.length > 2 && roomCreator.length > 2){
+      console.log("INFO = Room joining request sent.")
       socket.emit('join',{"newRoomJoiner" : newRoomJoiner ,"roomCreator" : roomCreator});
-      CreateRoom.disabled = true;
-      JoinRoom.disabled = true;
+  }
+  else{
+    console.log("ERROR = Room name is not valid , hence room joining failed");
+    notAcceptableToast()
   }
 }//end of joinAction function
 
@@ -92,7 +100,7 @@ function joinAction(){
   When user click on Disconnect button, this function will run.
 */
 function disconnectAction(){
-  console.log("Current user is "+currentUser)
+  console.log("INFO = Room disconnect action established by user "+currentUser);
   socket.emit('disconnectFromRoom',{"disconnectedUser":currentUser});
 }
 
@@ -100,19 +108,18 @@ function disconnectAction(){
   Event trigger when the user disconnects.
 */
 socket.on('userDisconnect',function(data){
-  console.log("this event emit")
-  console.log(data.disconnectFromRoomCreator)
   if(data.disconnectFromRoomCreator){
-    console.log("true event emit")
+    console.log("INFO = Room creator is disconnecting room");
     fileSelector.disabled = true;
     sendFile.disabled = true;
     bobStatusName.textContent = "disconnected";
     DisconnectRoom.disabled = true;
     dataChannel.close();
     pc.close();
+    console.log("INFO = Webrtc datachannel and peer connection has been closed")
   }
   else{
-    console.log("false event emit")
+    console.log("INFO = Room joiner is disconnecting room")
     bobStatusName.textContent = "disconnected"
     aliceStatusName.textContent = "disconnected"
     CreateRoom.disabled = false
@@ -120,6 +127,7 @@ socket.on('userDisconnect',function(data){
     DisconnectRoom.disabled = true
     dataChannel.close();
     pc.close();
+    console.log("INFO = Webrtc datachannel and peer connection has been closed")
   }
 });
 
@@ -127,11 +135,13 @@ socket.on('userDisconnect',function(data){
   This event helps user to change status after disconnects.
 */
 socket.on('changeStatus',function(){
+  console.log("INFO = changeStatus event triggers")
   bobStatusName.textContent = "disconnected"
   aliceStatusName.textContent = "disconnected"
   CreateRoom.disabled = false
   JoinRoom.disabled = false
   DisconnectRoom.disabled = true
+  console.log("INFO = Status changed successfully")
   
 })
 
@@ -139,41 +149,52 @@ socket.on('changeStatus',function(){
   Event triggers when room created and help to set status.
 */
 socket.on('roomCreated',function(data){
+  console.log("INFO = Room succesfully created")
   aliceStatusName.textContent = data +" is connected.";
+  isHeCreatesRoom = true;
+  JoinRoom.disabled = true;
+  CreateRoom.disabled = true;
 });
 
 /*
   Event trigger when room is already full.
 */
 socket.on('roomFull',function(data){
-  console.log("room full")
+  console.log("INFO = Currently given room is full or connected with other client")
   CreateRoom.disabled = false
   JoinRoom.disabled = false
   DisconnectRoom.disabled = true
   roomFullToast();
 });
 
+socket.on('connectionRequest-pending',function(){
+  console.log("INFO = Connection request pending triggered")
+  connectionRequestToast()
+})
+
 socket.on('connectionRequest',function(data){
+  console.log("INFO = User receives connection request");
   let peerMail = data.fromMail;
   if (confirm("User "+peerMail+" wants to connect ?")) {
+        console.log("INFO = User accept connection request");
         socket.emit("connectionAccepted",{"roomJoinerSocketId":data.socketid});
   }
   else {
+    console.log("User remvoe connection request");
     socket.emit("rejectConnection");
   }
 });
 
 socket.on('peerOffline',function(data){
-    console.log(data+" is currently not online");
+    console.log("INFO = Currently user is offline or not created");
 });
 
 socket.on('connectionAccepted',function(data){
-  console.log(data);
   prompt("connection created");
 });
 
 socket.on('invokeRoomJoiner',function(data){
-  console.log(data);
+  console.log("INFO = Invoking room joiner for further action")
   socket.emit('joinConfirm',{'roomCreatorSocketId':data.socketid});
 });
 
@@ -181,18 +202,22 @@ socket.on('invokeRoomJoiner',function(data){
   This socket event help first user to start webrtc connection.
 */
 socket.on('roomJoined',function(data){
+  console.log("INFO = roomJoined event triggers")
   fileSelector.disabled = false;
   DisconnectRoom.disabled = false;
   if(isHeCreatesRoom){
     bobStatusName.textContent = data.joiner+" is connected";
     currentUser = data.creator;
-    console.log("DEBUG ----- "+currentUser)
+    console.log("INFO = room creator is "+ currentUser)
     startServerlessConnection();
   }
   else{
+    aliceStatusName.textContent = data.joiner+" is connected";
     bobStatusName.textContent = data.creator+" is connected";
     currentUser = data.joiner;
-    console.log("DEBUG ----- "+currentUser)
+    CreateRoom.disabled = true;
+    JoinRoom.disabled = true;
+    console.log("INFO = room joinerr is "+currentUser)
   }
 });
 
@@ -610,6 +635,23 @@ function roomFullToast(){
     x.classList.remove("show");
   },1000);
 }
+
+function notAcceptableToast(){
+  var x = document.getElementById("NotAcceptable");
+  x.classList.add("show");
+  setTimeout(function(){
+    x.classList.remove("show");
+  },1000);
+}
+
+function connectionRequestToast(){
+  var x = document.getElementById("ConnectionRequest");
+  x.classList.add("show");
+  setTimeout(function(){
+    x.classList.remove("show");
+  },5000);
+}
+
 
 function onSendChannelStateChange(){
   var readyState = dataChannel.readyState;
