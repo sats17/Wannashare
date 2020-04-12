@@ -11,15 +11,16 @@ module.exports  = class SocketConnection{
           
             // convenience function to log server messages on the client
             function log() {
-              var array = ['Message from server:'];
+              var array = ['Logs From Server:'];
               array.push.apply(array, arguments);
               socket.emit('log', array);
             }
-            socket.on('message', function(message) {
+
+            socket.on('webrtc-message', function(message) {
               log('Client said: ', message);
-              // for a real app, would be room-only (not broadcast)
-              socket.to(roomCreator).emit('message', message);
+              socket.to(roomCreator).emit('webrtc-message', message);
             });
+
             socket.on('serverBaseDataShare',function(data){
               //console.log(data.Data);
               //console.log("data size is ",data.Data.byteLength);
@@ -27,12 +28,13 @@ module.exports  = class SocketConnection{
               socket.to(roomCreator).emit('serverBaseDataReceive',{ArrayData:data.Data});
             });
           
-          socket.on('FileMetaData', function(data) {
+            socket.on('FileMetaData', function(data) {
               log('Client said filename is : ', data.sendFileName , "And file size is ",data.sendFileSize );
               // for a real app, would be room-only (not broadcast)
               socket.broadcast.to(roomCreator).emit('FileMetaData', data);
             });
-          socket.on('fileReceived', function(data) {
+
+            socket.on('fileReceived', function(data) {
               log('Client said  : ', data);
               // for a real app, would be room-only (not broadcast)
               socket.broadcast.to(roomCreator).emit('fileReceived', data);
@@ -42,7 +44,7 @@ module.exports  = class SocketConnection{
           //////////////////////////////////////////////////////////////////////
           /////////////////////////////////////////////////////////////////////
           
-          socket.on('create', function(data) {
+            socket.on('create', function(data) {
               roomCreator = data.email;
               roomCreatorSocketId = socket.id;
               console.log("DEBUG--- Room Creator Socket ID "+roomCreatorSocketId)
@@ -61,9 +63,9 @@ module.exports  = class SocketConnection{
               }
               log('Client ID ' + socket.id + ' created room ' + roomCreator);
           
-          });
+            });
 
-          socket.on('join',function(data){
+            socket.on('join',function(data){
 
             roomJoinerSocketId = socket.id;
             console.log("DEBUG--- Room Joiner Socket ID "+roomJoinerSocketId)
@@ -86,7 +88,7 @@ module.exports  = class SocketConnection{
             }
             });
           
-          socket.on("connectionAccepted",function(data){
+            socket.on("connectionAccepted",function(data){
               roomJoinerSocketId = data.roomJoinerSocketId
               io.sockets.in(data.roomJoinerSocketId).emit('invokeRoomJoiner',{"socketid":roomCreatorSocketId});
 
@@ -108,31 +110,32 @@ module.exports  = class SocketConnection{
                 io.of('/').connected[roomJoinerSocketId].leave(roomCreator,function(){
                   io.sockets.in(roomCreatorSocketId).emit('userDisconnect',{'disconnectFromRoomCreator':true});
                 });
-              }
-
-              else{
-              console.log("Debug -- Room Leave from room joiner")
-              socket.leave(roomCreator,function(){
-                console.log(roomCreatorSocketId)
-                io.sockets.in(roomCreatorSocketId).emit('userDisconnect',{'disconnectFromRoomCreator':true})
-                io.sockets.in(roomJoinerSocketId).emit('userDisconnect',{'disconnectFromRoomCreator':false});
+              } else{
+                console.log("Debug -- Room Leave from room joiner")
+                socket.leave(roomCreator,function(){
+                  console.log(roomCreatorSocketId)
+                  io.sockets.in(roomCreatorSocketId).emit('userDisconnect',{'disconnectFromRoomCreator':true})
+                  io.sockets.in(roomJoinerSocketId).emit('userDisconnect',{'disconnectFromRoomCreator':false});
                 //console.log("Clients In room "+Object.keys(clientsInRoom.sockets))
-              });
-            }
+                });
+              }
             });
+
             socket.on('disconnect',function(){
-          
+              console.log("DEBUG = socket disconnects")
               socket.broadcast.to(roomCreator).emit('userDisconnect', 'disconnected');
             });
+
             socket.on('end', function (){
           
               socket.leave(roomCreator);
                 log('disconnect to server');
             });
+
             socket.on('bye', function(){
               console.log('received bye');
             });
-          });
+      });
           
     }
 }

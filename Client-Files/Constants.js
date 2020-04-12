@@ -1,4 +1,4 @@
-const pcConfig = {
+const PC_CONFIG = {
         'iceServers': [{'urls': 'stun:stun.l.google.com:19302'},
           {'urls':'stun:stun1.l.google.com:19302'},
           {'urls':'stun:stun2.l.google.com:19302'},
@@ -13,3 +13,12 @@ const pcConfig = {
         }
       ]
 }
+
+const FILE_SENT = "FileSentToast";
+const FILE_RECEIVE = "FileRecieveToast";
+const FILE_SENDING = "WaitMessageToast";
+const ROOM_FULL = "RoomFullToast";
+const INVALID_ATTEMPT = "NotAcceptable";
+const CONNECTION_REQUEST = "ConnectionRequest";
+const USER_NOT_FOUND = "UserNotFound";
+const CONNECTION_CREATED = "ConnectionCreated";

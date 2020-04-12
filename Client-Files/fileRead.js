@@ -71,7 +71,7 @@ function createAction(){
   }
   else{
     console.log("ERROR = Room name is not valid , hence room creation failed");
-    notAcceptableToast()
+    Toast(INVALID_ATTEMPT);
   }
 }//end of createAction function
 
@@ -83,8 +83,8 @@ function joinAction(){
   let roomCreator = prompt("Enter another peer name");
   if(newRoomJoiner === roomCreator){
     console.log("ERROR = Room joiner name and room creator name is same , hence room joining connection failed");
-    notAcceptableToast();
-    return true
+    Toast(INVALID_ATTEMPT);
+    return true;
   }
   if(newRoomJoiner.length > 2 && roomCreator.length > 2){
       console.log("INFO = Room joining request sent.")
@@ -92,7 +92,7 @@ function joinAction(){
   }
   else{
     console.log("ERROR = Room name is not valid , hence room joining failed");
-    notAcceptableToast()
+    Toast(INVALID_ATTEMPT);
   }
 }//end of joinAction function
 
@@ -108,6 +108,7 @@ function disconnectAction(){
   Event trigger when the user disconnects.
 */
 socket.on('userDisconnect',function(data){
+  console.log("INFO : Disconnected data = ",data)
   if(data.disconnectFromRoomCreator){
     console.log("INFO = Room creator is disconnecting room");
     fileSelector.disabled = true;
@@ -141,8 +142,7 @@ socket.on('changeStatus',function(){
   CreateRoom.disabled = false
   JoinRoom.disabled = false
   DisconnectRoom.disabled = true
-  console.log("INFO = Status changed successfully")
-  
+  console.log("INFO = Status changed successfully") 
 })
 
 /*
@@ -164,14 +164,20 @@ socket.on('roomFull',function(data){
   CreateRoom.disabled = false
   JoinRoom.disabled = false
   DisconnectRoom.disabled = true
-  roomFullToast();
+  Toast(ROOM_FULL);
 });
 
+/*
+  Event helps to display toast message when user ask permission to join the room.
+*/
 socket.on('connectionRequest-pending',function(){
   console.log("INFO = Connection request pending triggered")
-  connectionRequestToast()
+  Toast(CONNECTION_REQUEST);
 })
 
+/*
+  Event trigger to alice gets bob room joining request.
+*/
 socket.on('connectionRequest',function(data){
   console.log("INFO = User receives connection request");
   let peerMail = data.fromMail;
@@ -180,26 +186,37 @@ socket.on('connectionRequest',function(data){
         socket.emit("connectionAccepted",{"roomJoinerSocketId":data.socketid});
   }
   else {
-    console.log("User remvoe connection request");
+    console.log("INFO = User declined connection request");
     socket.emit("rejectConnection");
   }
 });
 
+/*
+  This event trigger when try to join room which is not active or not created.
+*/
 socket.on('peerOffline',function(data){
-    console.log("INFO = Currently user is offline or not created");
+    console.log("INFO = Currently user is offline or not created.");
+    Toast(USER_NOT_FOUND);
 });
 
+/**
+ * @deprecated Not using this event
+ */
 socket.on('connectionAccepted',function(data){
-  prompt("connection created");
+  console.log("INFO = Both connection are connected.")
+  Toast(CONNECTION_CREATED);
 });
 
+/*
+  This event listen by room joiner and trigger a server for adding room joiner socket in room.
+*/
 socket.on('invokeRoomJoiner',function(data){
-  console.log("INFO = Invoking room joiner for further action")
+  console.log("INFO = Invoking room joiner and sending event to server for adding his socket to room ")
   socket.emit('joinConfirm',{'roomCreatorSocketId':data.socketid});
 });
 
 /*
-  This socket event help first user to start webrtc connection.
+  This socket event help first user to start webrtc connection and other connection status will change.
 */
 socket.on('roomJoined',function(data){
   console.log("INFO = roomJoined event triggers")
@@ -217,26 +234,28 @@ socket.on('roomJoined',function(data){
     currentUser = data.joiner;
     CreateRoom.disabled = true;
     JoinRoom.disabled = true;
-    console.log("INFO = room joinerr is "+currentUser)
+    console.log("INFO = room joiner is "+currentUser)
   }
 });
 
+/*
+  This event triggers and print logs to console from servers.
+*/
 socket.on('log', function(array) {
   console.log.apply(console, array);
 });
 
 
 /*
-  Handles webrtc connection by sending message throught this socket event.
+  Creates webrtc connection by sending and listening required messages thorugh this socket event.
 */
-socket.on('message', function(message) {
-  console.log('Client received message:', message);
+socket.on('webrtc-message', function(message) {
+  console.log('INFO = Client received message:', message);
   if (message.type === 'offer') {
       startServerlessConnection();
       pc.setRemoteDescription(new RTCSessionDescription(message));
       doAnswer();
-    }
-   else if (message.type === 'answer') {
+  } else if (message.type === 'answer') {
     pc.setRemoteDescription(new RTCSessionDescription(message));
   } else if (message.type === 'candidate') {
     var candidate = new RTCIceCandidate({
@@ -244,89 +263,84 @@ socket.on('message', function(message) {
       candidate: message.candidate
     });
     pc.addIceCandidate(candidate);
-
   } else if (message === 'bye') {
     handleRemoteHangup();
   }
-
 });
 
 /*
   Set file metadata using this event.
 */
 socket.on("FileMetaData" , function(data){
-      console.log("file size is ", data.sendFileSize , " file name is ",data.sendFileName);
+      console.log("INFO = file size is ", data.sendFileSize)
+      console.log("INFO = file name is ", data.sendFileName);
       fileSize = data.sendFileSize;
       fileName = data.sendFileName;
-    });
+      Progress.max = fileSize;
+});
 
 /*
   event triggers when file data completly received.
 */
 socket.on('fileReceived' , function(data){
-      console.log("rec file size",data);
+      console.log("INFO = Receving file size ",data);
       Progress.value = 0;
-      fileSentToast();
+      Toast(FILE_SENT);
       fileSelector.value = '';
       sendFile.disabled = true;
       serverBaseSendFile.disabled = true;
     });
 
 /*
-  Event triggers when file data received.
+  Event triggers when server based file data received.
 */
 socket.on('serverBaseDataReceive',function(event){
-  if(fileSelector.disabled == false){
-    fileSelector.disabled = true;
-  }
+  // if(fileSelector.disabled == false){
+  //   fileSelector.disabled = true;
+  // }
   receiveBuffer.push(event.ArrayData);
-  
-  console.log(event.ArrayData.byteLength)
   receivedBufferSize += event.ArrayData.byteLength;
   Progress.value += event.ArrayData.byteLength;
 
   if(receivedBufferSize === fileSize){
-        console.log("Debug - Inside complete section")
+        console.log(receiveBuffer)
+        console.log(receiveBuffer.size)
+        console.log("DEBUG = Inside complete section")
         receivedBufferSize = 0;
         const received = new Blob(receiveBuffer);
-        console.log(received);
         downloadAnchor.href = URL.createObjectURL(received);
-        console.log(downloadAnchor.href)
         downloadAnchor.download = fileName;
-        console.log("file name is ",fileName);
-        //var download ='Click to download ',fileSize;
-        console.log(fileSize);
+        console.log("DEBUG = file name is ",fileName);
         downloadAnchor.textContent = 'Click to download file = '+fileName;
         socket.emit("fileReceived" , "file receives");
         console.log("received.size here we reach");
         receiveBuffer = [];
         Progress.value = 0;
         fileSelector.disabled = false;
-        fileReceiveToast();
-      }
-
+        Toast(FILE_RECEIVE);
+  }
 });
 
 
 
 //////////////////////////////////////////////////////////////////////////
 function startServerlessConnection() {
-    console.log('>>>>>>> startServerlessConnection() ');
+    console.log('INFO = startServerlessConnection() ');
 
     console.log('>>>>>> creating peer connection');
-      createPeerConnection();
+    createPeerConnection();
 
-      console.log('isHeCreatesRoom', isHeCreatesRoom);
-      if (isHeCreatesRoom) {
-        doCall();
-      }
-
+    console.log('isHeCreatesRoom', isHeCreatesRoom);
+    if(isHeCreatesRoom) {
+      doCall();
+    }
 }//end of function startServerlessConnection
-console.log(pcConfig)
+
+console.log("INFO = Configurations : ",PC_CONFIG)
 
 function createPeerConnection() {
     try {
-      pc = new RTCPeerConnection(pcConfig);
+      pc = new RTCPeerConnection(PC_CONFIG);
       const dataChannelOptions = {
         ordered: true,
         maxPacketLifeTime: 3000,
@@ -352,7 +366,7 @@ function createPeerConnection() {
 function handleIceCandidate(event) {
       console.log('icecandidate event: ', event);
       if (event.candidate) {
-          socket.emit('message',{
+          socket.emit('webrtc-message',{
           type: 'candidate',
           label: event.candidate.sdpMLineIndex,
           id: event.candidate.sdpMid,
@@ -365,7 +379,8 @@ function handleIceCandidate(event) {
 
 function handleIceCandidateEvents(event){
       if(pc.iceConnectionState === "failed"){
-        alert("Peers Connection failed , because one of the user are behind symmetric NAT");
+        //alert("Peers Connection failed , because one of the user are behind symmetric NAT")
+        Toast(INVALID_ATTEMPT);
       }
 
 }
@@ -379,7 +394,7 @@ function doCall() {
 
   pc.createOffer(function(offer) {
   pc.setLocalDescription(new RTCSessionDescription(offer), function() {
-    socket.emit('message',offer);
+    socket.emit('webrtc-message',offer);
   }, onCreateSessionDescriptionError);
 }, handleCreateOfferError);
 
@@ -390,7 +405,7 @@ function doAnswer() {
 
   pc.createAnswer(function(answer) {
     pc.setLocalDescription(new RTCSessionDescription(answer), function() {
-      socket.emit('message',answer);
+      socket.emit('webrtc-message',answer);
     }, onCreateSessionDescriptionError);
   }, handleCreateOfferError);
 }
@@ -603,53 +618,6 @@ function onReceiveMessageCallback(event) {
         Progress.value = 0;
         fileReceiveToast();
       }
-}
-
-function fileSentToast(){
-  var x = document.getElementById("FileSentToast");
-  x.classList.add("show");
-  setTimeout(function(){
-    x.classList.remove("show");
-  },1000);
-}
-function fileReceiveToast(){
-  var x = document.getElementById("FileRecieveToast");
-  x.classList.add("show");
-  setTimeout(function(){
-    x.classList.remove("show");
-  },1000);
-}
-
-function readToast(){
-  var x = document.getElementById("WaitMessageToast");
-  x.classList.add("show");
-  setTimeout(function(){
-    x.classList.remove("show");
-  },1000);
-}
-
-function roomFullToast(){
-  var x = document.getElementById("RoomFullToast");
-  x.classList.add("show");
-  setTimeout(function(){
-    x.classList.remove("show");
-  },1000);
-}
-
-function notAcceptableToast(){
-  var x = document.getElementById("NotAcceptable");
-  x.classList.add("show");
-  setTimeout(function(){
-    x.classList.remove("show");
-  },1000);
-}
-
-function connectionRequestToast(){
-  var x = document.getElementById("ConnectionRequest");
-  x.classList.add("show");
-  setTimeout(function(){
-    x.classList.remove("show");
-  },5000);
 }
 
 
