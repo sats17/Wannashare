@@ -23,9 +23,14 @@
 </td>
 </tr>
 </table>
-  <div id = "toast">File Sent...</div>
-  <div id = "Toast">File Received...</div>
-  <div id = "toastRead">Do not close the browser untill receiver not receive the file.</div>
+  <div id = "FileSentToast">File Sent...</div>
+  <div id = "FileRecieveToast">File Received...</div>
+  <div id = "WaitMessageToast">Do not close the browser untill receiver not receive the file.</div>
+  <div id = "RoomFullToast">Room is full, Please try with different name.</div>
+  <div id = "NotAcceptable">Not Acceptable.</div>
+  <div id = "ConnectionRequest">Joining request has been successfully sent, ask your friend to accept it..</div>
+  <div id = "UserNotFound">Currently user is offline or not created</div>
+  <div id = "ConnectionCreated">Connection Created</div>
   <div class = "container">
   <table id = "tab" align="center">
     <tr>
@@ -42,8 +47,8 @@
     <tr class="break"><td colspan="5"></td></tr>
   <tr>
     <td>
-        <input type="file" id="fileInput" name="file" />
-        <label for="fileInput">&nbsp;Choose a file...</label>
+        <input type="file" id="fileSelector" name="file" />
+        <label for="fileSelector">&nbsp;Choose a file...</label>
         <span>
           <strong>Chosen file :</strong>
           <span id="fileName">None</span>
@@ -83,7 +88,10 @@
 </div>
   <script src = "/socket.io/socket.io.js"></script>
   <script src = "https://webrtc.github.io/adapter/adapter-latest.js"></script>
-  <script src = "/fileRead.js"></script>
-
+  <script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src = "./Client-Files/SocketConfig.js"></script>
+  <script src = "./Client-Files/Constants.js"></script>
+  <script src = "./Client-Files/fileRead.js"></script>
+  <script src = "./Client-Files/Utility.js"></script>
 </body>
 </html>

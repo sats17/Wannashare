@@ -1,182 +1,261 @@
 'use strict';
-var pc;
-var reader;
-var file;
-var dataChannel;
-var fileReader;
-var fileSize = 0;
-var fileName;
-var receiveChannel;
-let receivedSize = 0;
 
-var heCreateRoom = false;
-
+/*
+  Required Variables
+*/
+let pc;
+let file;
+let dataChannel;
+let fileReader;
+let fileSize = 0;
+let fileName;
+let receiveChannel;
+let receivedBufferSize = 0;
+let isHeCreatesRoom = false;
 let receiveBuffer = [];
-var anotherpeer = false;
-
-var pcConfig = {
-  'iceServers': [{'urls': 'stun:stun.l.google.com:19302'},
-    {'urls':'stun:stun1.l.google.com:19302'},
-    {'urls':'stun:stun2.l.google.com:19302'},
-    {'urls':'stun:stun3.l.google.com:19302'},
-    {'urls':'stun:stun4.l.google.com:19302'},
-  {
-    "urls": [
-      "turn:13.250.13.83:3478?transport=udp"
-    ],
-    "username": "YzYNCouZM1mhqhmseWk6",
-    "credential": "YzYNCouZM1mhqhmseWk6"
-  }
-]
-};
+let anotherpeer = false;
+let currentUser;
 
 
-const fileInput = document.querySelector('input#fileInput');
-fileInput.disabled = true;
-var fullPath = document.getElementById('fileInput').value;
-var fileNameField = document.getElementById('fileName');
-var aliceStatusName = document.getElementById('aliceStatus');
-
-
-fileInput.addEventListener('change', handleFileSelect, false);
-
-var CreateRoom = document.querySelector('button#Create');
-var JoinRoom = document.querySelector('button#Join');
-var sendFile = document.querySelector('button#sendFile');
-var DisconnectRoom = document.querySelector('button#disconnect');
-var serverBaseSendFile = document.querySelector('button#sendFileUsingServer');
-
-
-
+/*
+  Html GUI Selectors.
+*/
+const fileSelector = document.querySelector('input#fileSelector');
+let fileNameField = document.getElementById('fileName');
+let aliceStatusName = document.getElementById('aliceStatus');
+let bobStatusName = document.getElementById('bobStatus');
+let CreateRoom = document.querySelector('button#Create');
+let JoinRoom = document.querySelector('button#Join');
+let sendFile = document.querySelector('button#sendFile');
+let DisconnectRoom = document.querySelector('button#disconnect');
+let serverBaseSendFile = document.querySelector('button#sendFileUsingServer');
 const downloadAnchor = document.querySelector('a#download');
 const Progress = document.querySelector('progress#progress');
 
+/*
+  Event Listners.
+*/
+fileSelector.addEventListener('change', handleFileSelect, false);
+
+/*
+  HTML GUI Flags.
+*/
+fileSelector.disabled = true;
 sendFile.disabled = true;
 serverBaseSendFile.disabled = true;
 DisconnectRoom.disabled = true;
-//CreateRoom.disabled = true;
+
+
+/*
+  Function Calls when HTML GUI triggers.
+*/
 CreateRoom.onclick = createAction;
 JoinRoom.onclick = joinAction;
-sendFile.onclick = sendFileAction;
+sendFile.onclick = serverLessSendFileAction;
 DisconnectRoom.onclick = disconnectAction;
 serverBaseSendFile.onclick = serverBaseSendFileAction;
 
-//fileInput.onclick = handleFileSelect;
+/*
+  Creates instance of socket connection.
+*/
+let socket = socketConfig;
 
-
-var socket = io.connect();
-
-
+/* 
+  When user click on Create button, this function will run.
+*/
 function createAction(){
-  //userName = prompt("Enter your name:");
-  var roomCreator = prompt('Enter your unique name:');
-
-  if (roomCreator !== null) {
+  let roomCreator = prompt('Enter your unique name:');
+  if (roomCreator.length > 2) {
     socket.emit('create', {email : roomCreator});
-    console.log('Attempted to create or  join roomCreator', roomCreator);
-    heCreateRoom = true;
-    JoinRoom.disabled = true;
+    console.log("INFO = Attempted to create a room by "+roomCreator);
   }
+  else{
+    console.log("ERROR = Room name is not valid , hence room creation failed");
+    Toast(INVALID_ATTEMPT);
+  }
+}//end of createAction function
 
-}//end of start function
-
+/*
+  When user click on Join button, this function will run.
+*/
 function joinAction(){
-
-  var newRoomJoiner = prompt("Enter your unique name");
-  var roomCreator = prompt("Enter another peer name");
-  if(newRoomJoiner !== null && roomCreator !== null){
-      aliceStatusName.textContent = newRoomJoiner +" is connected.";
-
-      socket.emit('join',{"newRoomJoiner" : newRoomJoiner ,"roomCreator" : roomCreator});
-      CreateRoom.disabled = true;
+  let newRoomJoiner = prompt("Enter your unique name");
+  let roomCreator = prompt("Enter another peer name");
+  if(newRoomJoiner === roomCreator){
+    console.log("ERROR = Room joiner name and room creator name is same , hence room joining connection failed");
+    Toast(INVALID_ATTEMPT);
+    return true;
   }
-}//end of join Action
+  if(newRoomJoiner.length > 2 && roomCreator.length > 2){
+      console.log("INFO = Room joining request sent.")
+      socket.emit('join',{"newRoomJoiner" : newRoomJoiner ,"roomCreator" : roomCreator});
+  }
+  else{
+    console.log("ERROR = Room name is not valid , hence room joining failed");
+    Toast(INVALID_ATTEMPT);
+  }
+}//end of joinAction function
 
+/*
+  When user click on Disconnect button, this function will run.
+*/
 function disconnectAction(){
-  socket.emit('disconnectFromUser');
-  bobStatus.textContent = "disconnected";
-  DisconnectRoom.disabled = true;
-  CreateRoom.disabled = false;
-  JoinRoom.disabled = false;
-  dataChannel.close();
-  pc.close();
-  fileInput.disabled = true;
-  sendFile.disabled = true;
+  console.log("INFO = Room disconnect action established by user "+currentUser);
+  socket.emit('disconnectFromRoom',{"disconnectedUser":currentUser});
 }
 
-///////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////
+/*
+  Event trigger when the user disconnects.
+*/
+socket.on('userDisconnect',function(data){
+  console.log("INFO : Disconnected data = ",data)
+  if(data.disconnectFromRoomCreator){
+    console.log("INFO = Room creator is disconnecting room");
+    fileSelector.disabled = true;
+    sendFile.disabled = true;
+    bobStatusName.textContent = "disconnected";
+    DisconnectRoom.disabled = true;
+    dataChannel.close();
+    pc.close();
+    console.log("INFO = Webrtc datachannel and peer connection has been closed")
+  }
+  else{
+    console.log("INFO = Room joiner is disconnecting room")
+    bobStatusName.textContent = "disconnected"
+    aliceStatusName.textContent = "disconnected"
+    CreateRoom.disabled = false
+    JoinRoom.disabled = false
+    DisconnectRoom.disabled = true
+    dataChannel.close();
+    pc.close();
+    console.log("INFO = Webrtc datachannel and peer connection has been closed")
+  }
+});
+
+/*
+  This event helps user to change status after disconnects.
+*/
+socket.on('changeStatus',function(){
+  console.log("INFO = changeStatus event triggers")
+  bobStatusName.textContent = "disconnected"
+  aliceStatusName.textContent = "disconnected"
+  CreateRoom.disabled = false
+  JoinRoom.disabled = false
+  DisconnectRoom.disabled = true
+  console.log("INFO = Status changed successfully") 
+})
+
+/*
+  Event triggers when room created and help to set status.
+*/
 socket.on('roomCreated',function(data){
+  console.log("INFO = Room succesfully created")
   aliceStatusName.textContent = data +" is connected.";
-
-});
-socket.on('roomCreateFull',function(data){
-
-  DownloadToast();
-
-
+  isHeCreatesRoom = true;
+  JoinRoom.disabled = true;
+  CreateRoom.disabled = true;
 });
 
+/*
+  Event trigger when room is already full.
+*/
+socket.on('roomFull',function(data){
+  console.log("INFO = Currently given room is full or connected with other client")
+  CreateRoom.disabled = false
+  JoinRoom.disabled = false
+  DisconnectRoom.disabled = true
+  Toast(ROOM_FULL);
+});
+
+/*
+  Event helps to display toast message when user ask permission to join the room.
+*/
+socket.on('connectionRequest-pending',function(){
+  console.log("INFO = Connection request pending triggered")
+  Toast(CONNECTION_REQUEST);
+})
+
+/*
+  Event trigger to alice gets bob room joining request.
+*/
 socket.on('connectionRequest',function(data){
-  var peerMail = data.fromMail;
+  console.log("INFO = User receives connection request");
+  let peerMail = data.fromMail;
   if (confirm("User "+peerMail+" wants to connect ?")) {
-        socket.emit("connectionAccepted",{"roomJoinersSocketId":data.socketid});
-    }
-    else {
+        console.log("INFO = User accept connection request");
+        socket.emit("connectionAccepted",{"roomJoinerSocketId":data.socketid});
+  }
+  else {
+    console.log("INFO = User declined connection request");
     socket.emit("rejectConnection");
   }
 });
 
-socket.on('roomFull',function(data){
-  console.log(data+" is currently connect with other user");
-});
-
+/*
+  This event trigger when try to join room which is not active or not created.
+*/
 socket.on('peerOffline',function(data){
-    console.log(data+" is currently not online");
+    console.log("INFO = Currently user is offline or not created.");
+    Toast(USER_NOT_FOUND);
 });
 
+/**
+ * @deprecated Not using this event
+ */
 socket.on('connectionAccepted',function(data){
-  console.log(data);
-  prompt("connection created");
+  console.log("INFO = Both connection are connected.")
+  Toast(CONNECTION_CREATED);
 });
 
+/*
+  This event listen by room joiner and trigger a server for adding room joiner socket in room.
+*/
 socket.on('invokeRoomJoiner',function(data){
-  console.log(data);
-
-  socket.emit('joinConfirm');
+  console.log("INFO = Invoking room joiner and sending event to server for adding his socket to room ")
+  socket.emit('joinConfirm',{'roomCreatorSocketId':data.socketid});
 });
 
+/*
+  This socket event help first user to start webrtc connection and other connection status will change.
+*/
 socket.on('roomJoined',function(data){
-  fileInput.disabled = false;
+  console.log("INFO = roomJoined event triggers")
+  fileSelector.disabled = false;
   DisconnectRoom.disabled = false;
-  if(heCreateRoom){
-    bobStatus.textContent = data.joiner+" is connected";
+  if(isHeCreatesRoom){
+    bobStatusName.textContent = data.joiner+" is connected";
+    currentUser = data.creator;
+    console.log("INFO = room creator is "+ currentUser)
     startServerlessConnection();
   }
   else{
-    bobStatus.textContent = data.creator+" is connected";
+    aliceStatusName.textContent = data.joiner+" is connected";
+    bobStatusName.textContent = data.creator+" is connected";
+    currentUser = data.joiner;
+    CreateRoom.disabled = true;
+    JoinRoom.disabled = true;
+    console.log("INFO = room joiner is "+currentUser)
   }
 });
 
-
-/////////////////////////////////////////////////////////////////////////////
-///////// receive socket event section //////////////////////////////////////////////////////
-
-
+/*
+  This event triggers and print logs to console from servers.
+*/
 socket.on('log', function(array) {
   console.log.apply(console, array);
 });
 
-////////////////////////////////////////////////
-// This client receives a message
-socket.on('message', function(message) {
-  console.log('Client received message:', message);
+
+/*
+  Creates webrtc connection by sending and listening required messages thorugh this socket event.
+*/
+socket.on('webrtc-message', function(message) {
+  console.log('INFO = Client received message:', message);
   if (message.type === 'offer') {
       startServerlessConnection();
       pc.setRemoteDescription(new RTCSessionDescription(message));
       doAnswer();
-    }
-   else if (message.type === 'answer') {
+  } else if (message.type === 'answer') {
     pc.setRemoteDescription(new RTCSessionDescription(message));
   } else if (message.type === 'candidate') {
     var candidate = new RTCIceCandidate({
@@ -184,94 +263,84 @@ socket.on('message', function(message) {
       candidate: message.candidate
     });
     pc.addIceCandidate(candidate);
-
   } else if (message === 'bye') {
     handleRemoteHangup();
   }
-
 });
 
-////////////////////// Meta data receive events //////////////////////////////////
-
+/*
+  Set file metadata using this event.
+*/
 socket.on("FileMetaData" , function(data){
-      console.log(data);
-      console.log("file size is ", data.sendFileSize , " file name is ",data.sendFileName);
+      console.log("INFO = file size is ", data.sendFileSize)
+      console.log("INFO = file name is ", data.sendFileName);
       fileSize = data.sendFileSize;
       fileName = data.sendFileName;
-    });
-//////////////////////////////////////////////////////////////////////
+      Progress.max = fileSize;
+});
+
+/*
+  event triggers when file data completly received.
+*/
 socket.on('fileReceived' , function(data){
-      console.log("rec file size",data);
+      console.log("INFO = Receving file size ",data);
       Progress.value = 0;
-      //alert("file received to another peer");
-      fileSentToast();
-      fileInput.value = '';
+      Toast(FILE_SENT);
+      fileSelector.value = '';
       sendFile.disabled = true;
       serverBaseSendFile.disabled = true;
     });
-//////////////////////////////////////////////////////////////
+
+/*
+  Event triggers when server based file data received.
+*/
 socket.on('serverBaseDataReceive',function(event){
-  Progress.max = fileSize;
+  // if(fileSelector.disabled == false){
+  //   fileSelector.disabled = true;
+  // }
   receiveBuffer.push(event.ArrayData);
-  
-  console.log(event.ArrayData.byteLength)
-  receivedSize += event.ArrayData.byteLength;
-
+  receivedBufferSize += event.ArrayData.byteLength;
   Progress.value += event.ArrayData.byteLength;
-  if(receivedSize === fileSize){
-        console.log("Debug - Inside complete section")
-        receivedSize = 0;
 
+  if(receivedBufferSize === fileSize){
+        console.log(receiveBuffer)
+        console.log(receiveBuffer.size)
+        console.log("DEBUG = Inside complete section")
+        receivedBufferSize = 0;
         const received = new Blob(receiveBuffer);
-        console.log(received);
         downloadAnchor.href = URL.createObjectURL(received);
-        console.log(downloadAnchor.href)
         downloadAnchor.download = fileName;
-        console.log("file name is ",fileName);
-        //var download ='Click to download ',fileSize;
-        console.log(fileSize);
-        downloadAnchor.textContent = 'Click to download ';
+        console.log("DEBUG = file name is ",fileName);
+        downloadAnchor.textContent = 'Click to download file = '+fileName;
         socket.emit("fileReceived" , "file receives");
         console.log("received.size here we reach");
         receiveBuffer = [];
         Progress.value = 0;
-        DownloadToast();
-
-      }
-
+        fileSelector.disabled = false;
+        Toast(FILE_RECEIVE);
+  }
 });
-//////////////////////////////////////////////////////////////
 
-socket.on('userDisconnect',function(data){
-  bobStatus.textContent = "disconnected";
-  DisconnectRoom.disabled = true;
-  CreateRoom.disabled = false;
-  JoinRoom.disabled = false;
-  dataChannel.close();
-  pc.close();
-  fileInput.disabled = true;
-  sendFile.disabled = true;
-});
+
 
 //////////////////////////////////////////////////////////////////////////
 function startServerlessConnection() {
-    console.log('>>>>>>> startServerlessConnection() ');
+    console.log('INFO = startServerlessConnection() ');
 
     console.log('>>>>>> creating peer connection');
-      createPeerConnection();
+    createPeerConnection();
 
-      console.log('heCreateRoom', heCreateRoom);
-      if (heCreateRoom) {
-        doCall();
-      }
-
+    console.log('isHeCreatesRoom', isHeCreatesRoom);
+    if(isHeCreatesRoom) {
+      doCall();
+    }
 }//end of function startServerlessConnection
 
+console.log("INFO = Configurations : ",PC_CONFIG)
 
 function createPeerConnection() {
     try {
-      pc = new RTCPeerConnection(pcConfig);
-      //console.log("rtc peer connection start before ice");
+      pc = new RTCPeerConnection(PC_CONFIG);
       const dataChannelOptions = {
         ordered: true,
         maxPacketLifeTime: 3000,
@@ -280,6 +349,7 @@ function createPeerConnection() {
       dataChannel = pc.createDataChannel("chat" , dataChannelOptions);
       dataChannel.onopen = onSendChannelStateChange;
       dataChannel.binaryType = 'arraybuffer';
+      dataChannel.readyState
       pc.ondatachannel = reciveChannelCallback;
       pc.onicecandidate = handleIceCandidate;
       pc.oniceconnectionstatechange = handleIceCandidateEvents;
@@ -296,7 +366,7 @@ function createPeerConnection() {
 function handleIceCandidate(event) {
       console.log('icecandidate event: ', event);
       if (event.candidate) {
-          socket.emit('message',{
+          socket.emit('webrtc-message',{
           type: 'candidate',
           label: event.candidate.sdpMLineIndex,
           id: event.candidate.sdpMid,
@@ -309,7 +379,8 @@ function handleIceCandidate(event) {
 
 function handleIceCandidateEvents(event){
       if(pc.iceConnectionState === "failed"){
-        alert("Peers Connection failed , because one of the user are behind symmetric NAT");
+        //alert("Peers Connection failed , because one of the user are behind symmetric NAT")
+        Toast(INVALID_ATTEMPT);
       }
 
 }
@@ -323,7 +394,7 @@ function doCall() {
 
   pc.createOffer(function(offer) {
   pc.setLocalDescription(new RTCSessionDescription(offer), function() {
-    socket.emit('message',offer);
+    socket.emit('webrtc-message',offer);
   }, onCreateSessionDescriptionError);
 }, handleCreateOfferError);
 
@@ -334,7 +405,7 @@ function doAnswer() {
 
   pc.createAnswer(function(answer) {
     pc.setLocalDescription(new RTCSessionDescription(answer), function() {
-      socket.emit('message',answer);
+      socket.emit('webrtc-message',answer);
     }, onCreateSessionDescriptionError);
   }, handleCreateOfferError);
 }
@@ -359,19 +430,17 @@ function handleFileSelect(evt){
   else{
     sendFile.disabled = false;
     serverBaseSendFile.disabled = false;
-    var filename = fileInput.files[0].name;
+    var filename = fileSelector.files[0].name;
     fileNameField.textContent = filename;
     console.log("Full path is ", filename);
 
-    var filesize = fileCheck.size;
-
-    socket.emit("FileMetaData" , {sendFileName : filename , sendFileSize : filesize });
+    socket.emit("FileMetaData" , {sendFileName : filename , sendFileSize : fileCheck.size });
   }
 }
 
 
-function sendFileAction() {
-    file = fileInput.files[0];
+function serverLessSendFileAction() {
+    file = fileSelector.files[0];
 
     if(file.size === 0){
       alert("File size is zero");
@@ -415,6 +484,7 @@ function sendFileAction() {
 
     fileReader.addEventListener('load', e => {
       //console.log('FileRead.onload ', e);
+      console.log('ready state is ' , dataChannel.readyState);
         dataChannel.send(e.target.result);
         offset += e.target.result.byteLength;
         Progress.value += e.target.result.byteLength;
@@ -432,7 +502,7 @@ function sendFileAction() {
 }// end of sendFileAction
 
 function serverBaseSendFileAction() {
-    file = fileInput.files[0];
+    file = fileSelector.files[0];
 
     if(file.size === 0){
       alert("File size is zero");
@@ -521,18 +591,17 @@ function reciveChannelCallback(event){
     URL.revokeObjectURL(downloadAnchor.href);
     downloadAnchor.removeAttribute('href');
   }
-
 }
 
 function onReceiveMessageCallback(event) {
   Progress.max = fileSize;
   receiveBuffer.push(event.data);
 
-  receivedSize += event.data.byteLength;
+  receivedBufferSize += event.data.byteLength;
 
   Progress.value += event.data.byteLength;
-  if(receivedSize === fileSize){
-        receivedSize = 0;
+  if(receivedBufferSize === fileSize){
+        receivedBufferSize = 0;
         //var uarray = Uint8Array.from(receiveBuffer);
         //console.log("typed array is =",uarray);
         const received = new Blob(receiveBuffer);
@@ -547,47 +616,24 @@ function onReceiveMessageCallback(event) {
         console.log("received.size here we reach");
         receiveBuffer = [];
         Progress.value = 0;
-        DownloadToast();
-
+        fileReceiveToast();
       }
 }
-function fileSentToast(){
-  var x = document.getElementById("toast");
-  x.classList.add("show");
-  setTimeout(function(){
-    x.classList.remove("show");
-  },1000);
-}
-function DownloadToast(){
-  var x = document.getElementById("Toast");
-  x.classList.add("show");
-  setTimeout(function(){
-    x.classList.remove("show");
-  },1000);
-}
 
-function readToast(){
-  var x = document.getElementById("toastRead");
-  x.classList.add("show");
-  setTimeout(function(){
-    x.classList.remove("show");
-  },1000);
-}
 
 function onSendChannelStateChange(){
   var readyState = dataChannel.readyState;
   console.log('ready state is ' , readyState);
   if(readyState === 'open'){
     console.log("data channel opend");
-    //fileInput.disabled = false;
-    }
+    //fileSelector.disabled = false;
+  }
   if(readyState === 'connecting'){
     console.log("connecting data channel");
   }
   if(readyState === 'closed'){
     console.log("send channel closed");
   }
-
 }
 
 function onReceiveChannelStateChange(){

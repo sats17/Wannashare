@@ -1,0 +1,25 @@
+1) File progress not getting reset for file sender. //Fixed
+2) Disconnect for room joiner not works properly // Till analysis - When room creator disconnects , 
+then room joiner gets disconnect and room creator not.
+3) When room is full it should not disabled buttons . // Fixed
+4) Some times room joiner gets automatically disconnect and file sharing stop for file receiver
+
+
+
+First Last Work - "Identitfy that socket is different and room is different , when we leave room socket will not
+            close " , last day added user identifier in client side and that name emits to server when disconnect
+            event start "
+
+20-02-2020 - "Refactor the server side socket connection code and remove currentUserSocketId and seperate it into
+                roomCreator and roomJoiner ID . because server side need the room joiner socket ID when room creator 
+                hits disconnect call , so room joiner can be disconnect automatically.
+
+22-02-2020 - "Complete with disconnect call ,added roomCreatorID in socket joiner server instance which was left in 
+              previous part. added room full notification and next task is fix button bugs for room full and room join
+                for room full calls.
+
+24-02-2020 - "Complete with room full and room join bug , added new notification and some condition for room name.
+              added console logs for better understanding. next task is try to fix next bugs .
+
+25-02-2020 - "Added Utility.js for global toast function and added constants for toast files".Refactored code.
+              next task is to find bug(4) and refactor code.
