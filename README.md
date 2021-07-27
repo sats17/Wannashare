@@ -1,4 +1,4 @@
-# Wannashare [Realtime data sharing]<br><br>
+# Wannashare [Small Size File sharing]<br><br>
 
 
 ## About
